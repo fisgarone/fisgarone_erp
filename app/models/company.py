@@ -10,8 +10,10 @@ class Company(db.Model):
     cnpj = db.Column(db.String(18), unique=True, nullable=False)
     razao_social = db.Column(db.String(200), nullable=False)
     nome_fantasia = db.Column(db.String(200), nullable=False)
+    ativo = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 
     def to_dict(self):
         return {

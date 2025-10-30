@@ -15,7 +15,7 @@ from app.models.ml_models import VendaML, RepasseML, CustoML
 import logging
 
 # Configuração básica do logging
-logging.basicConfig(level=logging.INFO, format='%(asctime )s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
