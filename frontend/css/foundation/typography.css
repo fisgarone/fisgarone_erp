@@ -1,0 +1,124 @@
+/* ===== TIPOGRAFIA PREMIUM ===== */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --ai-font-primary: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Escala de Tipografia Modular */
+  --ai-text-xs: 0.75rem;
+  --ai-text-sm: 0.875rem;
+  --ai-text-base: 1rem;
+  --ai-text-lg: 1.125rem;
+  --ai-text-xl: 1.25rem;
+  --ai-text-2xl: 1.5rem;
+  --ai-text-3xl: 1.875rem;
+  --ai-text-4xl: 2.25rem;
+  --ai-text-5xl: 3rem;
+  --ai-text-6xl: 3.75rem;
+
+  /* Pesos de Fonte */
+  --ai-font-light: 300;
+  --ai-font-normal: 400;
+  --ai-font-medium: 500;
+  --ai-font-semibold: 600;
+  --ai-font-bold: 700;
+  --ai-font-extrabold: 800;
+
+  /* Espaçamento de Linha */
+  --ai-leading-tight: 1.25;
+  --ai-leading-snug: 1.375;
+  --ai-leading-normal: 1.5;
+  --ai-leading-relaxed: 1.625;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--ai-font-primary);
+  font-size: var(--ai-text-base);
+  line-height: var(--ai-leading-relaxed);
+  color: var(--ai-text-primary);
+  background: var(--ai-bg-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Títulos com Gradiente */
+.ai-hero-title {
+  font-size: var(--ai-text-5xl);
+  font-weight: var(--ai-font-extrabold);
+  background: var(--ai-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: var(--ai-leading-tight);
+}
+
+.ai-section-title {
+  font-size: var(--ai-text-3xl);
+  font-weight: var(--ai-font-bold);
+  color: var(--ai-text-primary);
+  margin-bottom: 1rem;
+}
+
+/* Utilitários de Texto */
+.text-gradient {
+  background: var(--ai-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-success { color: var(--ai-secondary-600); }
+.text-warning { color: var(--ai-accent-600); }
+.text-error { color: #ef4444; }
+
+/* Hierarquia de Texto */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--ai-font-bold);
+  color: var(--ai-text-primary);
+  line-height: var(--ai-leading-tight);
+}
+
+h1 { font-size: var(--ai-text-4xl); }
+h2 { font-size: var(--ai-text-3xl); }
+h3 { font-size: var(--ai-text-2xl); }
+h4 { font-size: var(--ai-text-xl); }
+h5 { font-size: var(--ai-text-lg); }
+h6 { font-size: var(--ai-text-base); }
+
+p {
+  margin-bottom: 1rem;
+  color: var(--ai-text-secondary);
+}
+
+strong {
+  font-weight: var(--ai-font-semibold);
+  color: var(--ai-text-primary);
+}
+
+small {
+  font-size: var(--ai-text-sm);
+  color: var(--ai-text-muted);
+}
+
+/* Links */
+a {
+  color: var(--ai-primary-600);
+  text-decoration: none;
+  transition: var(--ai-transition-fast);
+}
+
+a:hover {
+  color: var(--ai-primary-700);
+  text-decoration: underline;
+}

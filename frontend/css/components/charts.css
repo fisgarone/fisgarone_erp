@@ -1,0 +1,385 @@
+/* ===== ESTILOS PRECISOS PARA GRÁFICOS ===== */
+.chart-section {
+    background: var(--ai-card-bg-primary);
+    border: 1px solid var(--ai-card-border);
+    border-radius: var(--ai-radius-xl);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: var(--ai-transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+.chart-section:hover {
+    box-shadow: var(--ai-shadow-md);
+    border-color: var(--ai-primary-300);
+}
+
+.chart-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--ai-text-primary);
+    margin: 0 0 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chart-subtitle {
+    font-size: 0.875rem;
+    color: var(--ai-text-muted);
+    margin: -0.75rem 0 1rem 0;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.chart-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--ai-card-border);
+}
+
+.chart-action-btn {
+    background: none;
+    border: 1px solid var(--ai-card-border);
+    border-radius: var(--ai-radius-md);
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    color: var(--ai-text-muted);
+    cursor: pointer;
+    transition: var(--ai-transition-fast);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.chart-action-btn:hover {
+    background: var(--ai-card-bg-secondary);
+    border-color: var(--ai-primary-300);
+    color: var(--ai-text-primary);
+}
+
+.chart-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--ai-card-bg-secondary);
+    border-radius: var(--ai-radius-lg);
+    border: 1px solid var(--ai-card-border);
+}
+
+.chart-stat {
+    text-align: center;
+}
+
+.chart-stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--ai-text-primary);
+    display: block;
+    line-height: 1.2;
+}
+
+.chart-stat-label {
+    font-size: 0.75rem;
+    color: var(--ai-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Estados de Loading para Gráficos */
+.chart-loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.chart-loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--ai-card-bg-primary);
+    opacity: 0.8;
+    z-index: 10;
+    border-radius: var(--ai-radius-xl);
+}
+
+.chart-loading::after {
+    content: '📊 Carregando gráfico...';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--ai-gradient-primary);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--ai-radius-lg);
+    font-size: 0.875rem;
+    font-weight: 600;
+    z-index: 11;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Estados de Erro para Gráficos */
+.chart-error {
+    position: relative;
+}
+
+.chart-error::before {
+    content: '❌ Erro ao carregar gráfico';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--ai-error-50);
+    color: var(--ai-error-700);
+    padding: 1rem 2rem;
+    border-radius: var(--ai-radius-lg);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: center;
+    border: 1px solid var(--ai-error-200);
+    z-index: 10;
+}
+
+/* Animações de Entrada para Gráficos */
+@keyframes chartFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chart-section {
+    animation: chartFadeIn 0.6s ease-out both;
+}
+
+.chart-section:nth-child(1) { animation-delay: 0.1s; }
+.chart-section:nth-child(2) { animation-delay: 0.2s; }
+.chart-section:nth-child(3) { animation-delay: 0.3s; }
+.chart-section:nth-child(4) { animation-delay: 0.4s; }
+
+/* Tooltips Customizados para Gráficos */
+.chartjs-tooltip {
+    background: var(--ai-card-bg-primary) !important;
+    border: 1px solid var(--ai-card-border) !important;
+    border-radius: var(--ai-radius-md) !important;
+    box-shadow: var(--ai-shadow-lg) !important;
+    padding: 0.75rem !important;
+    color: var(--ai-text-primary) !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+.chartjs-tooltip .tooltip-header {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--ai-text-primary) !important;
+}
+
+.chartjs-tooltip .tooltip-body {
+    font-size: 0.875rem;
+    color: var(--ai-text-secondary) !important;
+}
+
+/* Legendas Customizadas */
+.chartjs-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.chartjs-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--ai-text-primary);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--ai-radius-sm);
+    transition: var(--ai-transition-fast);
+}
+
+.chartjs-legend-item:hover {
+    background: var(--ai-card-bg-secondary);
+}
+
+.chartjs-legend-marker {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+}
+
+/* Responsividade para Gráficos */
+@media (max-width: 1200px) {
+    .chart-container {
+        height: 280px;
+    }
+}
+
+@media (max-width: 768px) {
+    .chart-container {
+        height: 250px;
+    }
+
+    .chart-section {
+        padding: 1rem;
+    }
+
+    .chart-title {
+        font-size: 1rem;
+    }
+
+    .chart-actions {
+        justify-content: center;
+    }
+
+    .chart-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .chart-stat-value {
+        font-size: 1.125rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .chart-container {
+        height: 220px;
+    }
+
+    .chart-stats {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .chart-actions {
+        flex-direction: column;
+    }
+
+    .chart-action-btn {
+        justify-content: center;
+    }
+}
+
+/* Modo de Impressão para Gráficos */
+@media print {
+    .chart-section {
+        break-inside: avoid;
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+    }
+
+    .chart-actions {
+        display: none;
+    }
+
+    .chart-container {
+        height: 250px;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .chart-section {
+        border: 2px solid var(--ai-text-primary);
+    }
+
+    .chart-action-btn {
+        border: 2px solid var(--ai-text-primary);
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .chart-section {
+        animation: none;
+    }
+
+    .chart-action-btn {
+        transition: none;
+    }
+}
+
+/* Estados de Foco para Acessibilidade */
+.chart-action-btn:focus {
+    outline: 2px solid var(--ai-primary-500);
+    outline-offset: 2px;
+}
+
+.chart-section:focus-within {
+    outline: 2px solid var(--ai-primary-300);
+    outline-offset: 2px;
+}
+
+/* Custom Scrollbar para Containers de Gráfico */
+.chart-container::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.chart-container::-webkit-scrollbar-track {
+    background: var(--ai-card-bg-secondary);
+    border-radius: 3px;
+}
+
+.chart-container::-webkit-scrollbar-thumb {
+    background: var(--ai-primary-300);
+    border-radius: 3px;
+}
+
+.chart-container::-webkit-scrollbar-thumb:hover {
+    background: var(--ai-primary-500);
+}
+
+/* Indicadores de Performance */
+.chart-performance {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 0.75rem;
+    color: var(--ai-text-muted);
+    background: var(--ai-card-bg-secondary);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--ai-radius-sm);
+    border: 1px solid var(--ai-card-border);
+}
+
+/* Badges para Tipos de Gráfico */
+.chart-type-badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    font-size: 0.75rem;
+    color: var(--ai-text-muted);
+    background: var(--ai-card-bg-secondary);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--ai-radius-sm);
+    border: 1px solid var(--ai-card-border);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}

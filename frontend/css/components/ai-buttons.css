@@ -1,0 +1,237 @@
+/* ===== SISTEMA DE BOTÕES PROFISSIONAL ===== */
+.ai-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--ai-radius-lg);
+  font-family: var(--ai-font-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--ai-transition-normal);
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  line-height: 1;
+}
+
+/* Botão Primário */
+.ai-btn-primary {
+  background: var(--ai-gradient-primary);
+  color: white;
+  box-shadow: var(--ai-shadow-sm);
+}
+
+.ai-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ai-shadow-md);
+}
+
+.ai-btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Botão Secundário */
+.ai-btn-secondary {
+  background: var(--ai-card-bg-primary);
+  color: var(--ai-text-primary);
+  border: 1px solid var(--ai-card-border);
+  box-shadow: var(--ai-shadow-xs);
+}
+
+.ai-btn-secondary:hover {
+  background: var(--ai-card-bg-secondary);
+  border-color: var(--ai-primary-300);
+  transform: translateY(-1px);
+}
+
+/* Botão de Tema Moderno */
+.theme-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--ai-card-bg-primary);
+  border: 1px solid var(--ai-card-border);
+  border-radius: var(--ai-radius-lg);
+  padding: 0.5rem;
+  backdrop-filter: blur(10px);
+}
+
+.theme-toggle {
+  width: 48px;
+  height: 24px;
+  background: var(--ai-gradient-primary);
+  border: none;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: var(--ai-transition-normal);
+}
+
+.theme-toggle::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: var(--ai-transition-normal);
+  box-shadow: var(--ai-shadow-sm);
+}
+
+[data-theme="dark"] .theme-toggle::before {
+  transform: translateX(24px);
+}
+
+/* Botão com Ícone */
+.btn-with-icon {
+  padding: 0.75rem 1.25rem;
+}
+
+/* Grupo de Botões */
+.btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Botão Flutuante Atualizado */
+.floating-action {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 56px;
+  height: 56px;
+  background: var(--ai-gradient-primary);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--ai-shadow-lg);
+  transition: var(--ai-transition-normal);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-action:hover {
+  transform: translateY(-4px) scale(1.1);
+  box-shadow: var(--ai-shadow-xl);
+}
+
+/* Estados dos Botões */
+.ai-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.ai-btn:focus {
+  outline: 2px solid var(--ai-primary-300);
+  outline-offset: 2px;
+}
+
+/* Botão de Loading */
+.ai-btn.loading {
+  position: relative;
+  color: transparent;
+}
+
+.ai-btn.loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Tamanhos de Botões */
+.ai-btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+}
+
+.ai-btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+}
+
+/* Botões de Ação Específicos */
+.btn-refresh::before {
+  content: '🔄';
+}
+
+.btn-export::before {
+  content: '📥';
+}
+
+.btn-charts::before {
+  content: '📊';
+}
+
+/* Efeito de Onda nos Botões */
+.ai-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%);
+  transform-origin: 50% 50%;
+}
+
+.ai-btn:focus:not(:active)::after {
+  animation: ripple 1s ease-out;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0, 0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(20, 20);
+    opacity: 0;
+  }
+}
+
+/* Responsividade para Botões */
+@media (max-width: 768px) {
+  .ai-btn {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.8125rem;
+  }
+
+  .btn-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-group .ai-btn {
+    width: 100%;
+  }
+
+  .theme-toggle-container {
+    padding: 0.375rem;
+  }
+}

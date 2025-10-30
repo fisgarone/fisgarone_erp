@@ -1,0 +1,182 @@
+/* ===== FISGARONE AI - DESIGN SYSTEM PROFISSIONAL ===== */
+:root {
+  /* CORES PRIMÁRIAS - AZUL PROFISSIONAL */
+  --ai-primary-50: #f0f9ff;
+  --ai-primary-100: #e0f2fe;
+  --ai-primary-200: #bae6fd;
+  --ai-primary-300: #7dd3fc;
+  --ai-primary-400: #38bdf8;
+  --ai-primary-500: #0ea5e9;
+  --ai-primary-600: #0284c7;
+  --ai-primary-700: #0369a1;
+  --ai-primary-800: #075985;
+  --ai-primary-900: #0c4a6e;
+
+  /* CORES SECUNDÁRIAS - VERDE FINANCEIRO */
+  --ai-secondary-50: #f0fdf4;
+  --ai-secondary-100: #dcfce7;
+  --ai-secondary-200: #bbf7d0;
+  --ai-secondary-300: #86efac;
+  --ai-secondary-400: #4ade80;
+  --ai-secondary-500: #22c55e;
+  --ai-secondary-600: #16a34a;
+  --ai-secondary-700: #15803d;
+  --ai-secondary-800: #166534;
+  --ai-secondary-900: #14532d;
+
+  /* CORES DE DESTAQUE - LARANJA CORPORATIVO */
+  --ai-accent-50: #fff7ed;
+  --ai-accent-100: #ffedd5;
+  --ai-accent-200: #fed7aa;
+  --ai-accent-300: #fdba74;
+  --ai-accent-400: #fb923c;
+  --ai-accent-500: #f97316;
+  --ai-accent-600: #ea580c;
+  --ai-accent-700: #c2410c;
+  --ai-accent-800: #9a3412;
+  --ai-accent-900: #7c2d12;
+
+  /* NEUTROS - ESCALA CORPORATIVA */
+  --ai-gray-50: #f8fafc;
+  --ai-gray-100: #f1f5f9;
+  --ai-gray-200: #e2e8f0;
+  --ai-gray-300: #cbd5e1;
+  --ai-gray-400: #94a3b8;
+  --ai-gray-500: #64748b;
+  --ai-gray-600: #475569;
+  --ai-gray-700: #334155;
+  --ai-gray-800: #1e293b;
+  --ai-gray-900: #0f172a;
+
+  /* GRADIENTES PROFISSIONAIS */
+  --ai-gradient-primary: linear-gradient(135deg, var(--ai-primary-600) 0%, var(--ai-primary-800) 100%);
+  --ai-gradient-success: linear-gradient(135deg, var(--ai-secondary-600) 0%, var(--ai-secondary-800) 100%);
+  --ai-gradient-warning: linear-gradient(135deg, var(--ai-accent-600) 0%, var(--ai-accent-800) 100%);
+
+  /* SOMBRAS PROFISSIONAIS */
+  --ai-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --ai-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --ai-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --ai-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --ai-shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  /* BORDAS E CANTOS */
+  --ai-radius-sm: 6px;
+  --ai-radius-md: 8px;
+  --ai-radius-lg: 12px;
+  --ai-radius-xl: 16px;
+  --ai-radius-2xl: 20px;
+
+  /* TRANSIÇÕES SUAVES */
+  --ai-transition-fast: all 0.15s ease;
+  --ai-transition-normal: all 0.25s ease;
+  --ai-transition-slow: all 0.35s ease;
+
+  /* ===== VALORES PADRÃO (MODO CLARO) ===== */
+
+  /* CORES DE TEXTO - ALTO CONTRASTE */
+  --ai-text-primary: #0f172a;
+  --ai-text-secondary: #334155;
+  --ai-text-muted: #64748b;
+
+  /* CORES DE FUNDO - LIMPEZA */
+  --ai-bg-primary: #ffffff;
+  --ai-bg-secondary: #f8fafc;
+  --ai-bg-tertiary: #f1f5f9;
+
+  /* CORES DE CARDS */
+  --ai-card-bg-primary: #ffffff;
+  --ai-card-bg-secondary: #f8fafc;
+  --ai-card-border: #e2e8f0;
+
+  /* CORES DE DESTAQUE PARA CARDS */
+  --ai-card-accent-blue: #3b82f6;
+  --ai-card-accent-green: #10b981;
+  --ai-card-accent-orange: #f59e0b;
+  --ai-card-accent-purple: #8b5cf6;
+
+  /* GRADIENTES */
+  --ai-gradient-hero: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  --ai-gradient-card: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+}
+
+/* ===== MODO ESCURO PROFISSIONAL ===== */
+[data-theme="dark"] {
+  /* CORES DE TEXTO - ALTO CONTRASTE */
+  --ai-text-primary: #ffffff;
+  --ai-text-secondary: #e2e8f0;
+  --ai-text-muted: #94a3b8;
+
+  /* CORES DE FUNDO - PROFUNDIDADE */
+  --ai-bg-primary: #0f172a;
+  --ai-bg-secondary: #1e293b;
+  --ai-bg-tertiary: #334155;
+
+  /* CORES DE CARDS */
+  --ai-card-bg-primary: #1e293b;
+  --ai-card-bg-secondary: #334155;
+  --ai-card-border: #475569;
+
+  /* CORES DE DESTAQUE */
+  --ai-card-accent-blue: #1e40af;
+  --ai-card-accent-green: #065f46;
+  --ai-card-accent-orange: #9a3412;
+  --ai-card-accent-purple: #5b21b6;
+
+  /* GRADIENTES NO ESCURO */
+  --ai-gradient-hero: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  --ai-gradient-card: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+}
+
+/* ===== MODO CLARO PROFISSIONAL ===== */
+[data-theme="light"] {
+  /* CORES DE TEXTO - ALTO CONTRASTE */
+  --ai-text-primary: #0f172a;
+  --ai-text-secondary: #334155;
+  --ai-text-muted: #64748b;
+
+  /* CORES DE FUNDO - LIMPEZA */
+  --ai-bg-primary: #ffffff;
+  --ai-bg-secondary: #f8fafc;
+  --ai-bg-tertiary: #f1f5f9;
+
+  /* CORES DE CARDS */
+  --ai-card-bg-primary: #ffffff;
+  --ai-card-bg-secondary: #f8fafc;
+  --ai-card-border: #e2e8f0;
+
+  /* CORES DE DESTAQUE */
+  --ai-card-accent-blue: #3b82f6;
+  --ai-card-accent-green: #10b981;
+  --ai-card-accent-orange: #f59e0b;
+  --ai-card-accent-purple: #8b5cf6;
+
+  /* HEADER NO MODO CLARO - FUNDO CLARO */
+  --ai-gradient-hero: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+/* 🎨 APLICAÇÃO DAS CORES */
+body {
+  color: var(--ai-text-primary);
+  background: var(--ai-bg-primary);
+  margin: 0;
+  padding: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.ai-card {
+  background: var(--ai-card-bg-primary);
+  color: var(--ai-text-primary);
+  border-color: var(--ai-card-border);
+}
+
+/* 🎨 HEADERS POR TEMA - EXATAMENTE COMO VOCÊ PEDIU */
+[data-theme="light"] .ai-hero {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  color: #0f172a;
+}
+
+[data-theme="dark"] .ai-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #ffffff;
+}

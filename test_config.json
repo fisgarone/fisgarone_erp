@@ -1,0 +1,19 @@
+{
+  "mercado_livre": {
+    "ativo": true,
+    "app_id": "teste_ml",
+    "client_secret": "teste_secret",
+    "access_token": "token_teste_ml"
+  },
+  "shopee": {
+    "ativo": true,
+    "partner_id": "teste_shopee",
+    "secret_key": "teste_secret_shopee",
+    "access_token": "token_teste_shopee"
+  },
+  "automacao": {
+    "sincronizar_pedidos": true,
+    "sincronizar_produtos": true,
+    "sincronizar_estoque": true
+  }
+}
