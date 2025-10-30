@@ -1,25 +1,21 @@
-# render.yaml - VERSÃO 2, CORRIGIDA COM SINTAXE OFICIAL
+# render.yaml - VERSÃO 3, COM PLANO DE BD ATUALIZADO
 version: "1"
 
 databases:
-  # Define o banco de dados a ser criado
   - name: fisgarone-db
-    # 'postgres' é o tipo de banco de dados
-    databaseName: fisgarone_db_data # Nome interno do banco de dados
+    plan: "free" # Usa o plano gratuito para passar da validação inicial.
+    databaseName: fisgarone_db_data
     user: fisgarone_user
-    plan: starter
 
 services:
-  # Define o serviço web
   - type: web
     name: fisgarone-erp
     runtime: python
-    plan: starter
+    plan: starter # O plano 'starter' para web services ainda é válido.
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn run:app"
     envVars:
       - key: DATABASE_URL
-        # Obtém a URL de conexão do banco de dados definido acima
         fromDatabase:
           name: fisgarone-db
           property: connectionString
