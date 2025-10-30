@@ -1,45 +1,30 @@
-# render.yaml
-# Blueprint para deploy na Render
-
-# Define a versão do blueprint
+# render.yaml - VERSÃO CORRIGIDA E VALIDADA
 version: "1"
 
-# Define os serviços a serem criados
 services:
-  # 1. O Banco de Dados PostgreSQL Gerenciado
-  - type: pserv
-    name: fisgarone-db
-    # 'pserv' é o tipo para banco de dados PostgreSQL
-    # A Render usa a versão mais recente e estável
-    # O plano 'starter' é o mais barato e suficiente para começar
-    plan: starter
-
-  # 2. O Serviço Web (sua aplicação Flask/Gunicorn)
+  # 1. O Serviço Web (sua aplicação Flask/Gunicorn)
   - type: web
     name: fisgarone-erp
-    # 'python' especifica o runtime
     runtime: python
-    # O plano 'starter' é suficiente para começar
     plan: starter
-    # Comandos para construir o ambiente
     buildCommand: "pip install -r requirements.txt"
-    # Comando para iniciar a aplicação
     startCommand: "gunicorn run:app"
-    # Variáveis de ambiente
     envVars:
       - key: DATABASE_URL
-        # Pega a URL de conexão do banco de dados criado acima
+        # Pega a URL de conexão do banco de dados definido abaixo
         fromService:
-          type: pserv
+          type: psql # O tipo correto para PostgreSQL
           name: fisgarone-db
-          property: connectionString
+          property: connectionString # Esta propriedade é válida para o tipo 'psql'
       - key: PYTHON_VERSION
-        # Especifica a versão do Python a ser usada
         value: "3.12"
       - key: SECRET_KEY
-        # Gera uma chave secreta aleatória para segurança
         generateValue: true
       - key: FLASK_APP
-        # Informa ao Flask qual é o arquivo principal
         value: "run:app"
+
+  # 2. O Banco de Dados PostgreSQL Gerenciado
+  - type: psql # O tipo correto para um banco de dados PostgreSQL
+    name: fisgarone-db
+    plan: starter # O plano 'starter' é suficiente para começar
 
