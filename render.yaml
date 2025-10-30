@@ -20,7 +20,7 @@ services:
           name: fisgarone-db
           property: connectionString
       - key: PYTHON_VERSION
-        value: "3.12"
+        value: "3.12.0"
       - key: SECRET_KEY
         generateValue: true
       - key: FLASK_APP
