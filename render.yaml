@@ -1,9 +1,9 @@
-# render.yaml - VERSÃO 3, COM PLANO DE BD ATUALIZADO
+# render.yaml - VERSÃO 4, COM VERSÃO COMPLETA DO PYTHON
 version: "1"
 
 databases:
   - name: fisgarone-db
-    plan: "free" # Usa o plano gratuito para passar da validação inicial.
+    plan: "free"
     databaseName: fisgarone_db_data
     user: fisgarone_user
 
@@ -11,7 +11,7 @@ services:
   - type: web
     name: fisgarone-erp
     runtime: python
-    plan: starter # O plano 'starter' para web services ainda é válido.
+    plan: starter
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn run:app"
     envVars:
@@ -20,7 +20,7 @@ services:
           name: fisgarone-db
           property: connectionString
       - key: PYTHON_VERSION
-        value: "3.12.0"
+        value: "3.12.0" # Versão completa do Python
       - key: SECRET_KEY
         generateValue: true
       - key: FLASK_APP
