@@ -1,8 +1,16 @@
-# render.yaml - VERSÃO CORRIGIDA E VALIDADA
+# render.yaml - VERSÃO 2, CORRIGIDA COM SINTAXE OFICIAL
 version: "1"
 
+databases:
+  # Define o banco de dados a ser criado
+  - name: fisgarone-db
+    # 'postgres' é o tipo de banco de dados
+    databaseName: fisgarone_db_data # Nome interno do banco de dados
+    user: fisgarone_user
+    plan: starter
+
 services:
-  # 1. O Serviço Web (sua aplicação Flask/Gunicorn)
+  # Define o serviço web
   - type: web
     name: fisgarone-erp
     runtime: python
@@ -11,20 +19,13 @@ services:
     startCommand: "gunicorn run:app"
     envVars:
       - key: DATABASE_URL
-        # Pega a URL de conexão do banco de dados definido abaixo
-        fromService:
-          type: psql # O tipo correto para PostgreSQL
+        # Obtém a URL de conexão do banco de dados definido acima
+        fromDatabase:
           name: fisgarone-db
-          property: connectionString # Esta propriedade é válida para o tipo 'psql'
+          property: connectionString
       - key: PYTHON_VERSION
         value: "3.12"
       - key: SECRET_KEY
         generateValue: true
       - key: FLASK_APP
         value: "run:app"
-
-  # 2. O Banco de Dados PostgreSQL Gerenciado
-  - type: psql # O tipo correto para um banco de dados PostgreSQL
-    name: fisgarone-db
-    plan: starter # O plano 'starter' é suficiente para começar
-
