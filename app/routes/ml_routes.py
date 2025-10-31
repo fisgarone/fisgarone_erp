@@ -120,3 +120,39 @@ def init_ml_routes(app):
                 'message': 'Erro ao obter status da sincronização'
             }), 500
 
+
+# ===== NOVA ROTA PARA O DASHBOARD DE VENDAS =====
+@app.route('/api/ml/vendas', methods=['GET'])
+def get_vendas():
+    """
+    Endpoint de API para buscar todas as vendas do Mercado Livre
+    salvas no banco de dados para exibição no dashboard.
+    """
+    try:
+        # Consulta o banco de dados para buscar todas as vendas, ordenadas pela mais recente
+        vendas = VendaML.query.order_by(VendaML.data_venda.desc()).all()
+
+        # Converte a lista de objetos de venda em uma lista de dicionários
+        resultado = []
+        for venda in vendas:
+            resultado.append({
+                'id_pedido': venda.id_pedido,
+                'data_venda': venda.data_venda.isoformat() if venda.data_venda else None,
+                'situacao': venda.situacao,
+                'mlb': venda.mlb,
+                'sku': venda.sku,
+                'titulo': venda.titulo,
+                'quantidade': venda.quantidade,
+                'preco_unitario': venda.preco_unitario,
+                'taxa_ml': venda.taxa_ml,
+                'company_id': venda.company_id
+            })
+
+        # Retorna os dados como uma resposta JSON
+        return jsonify(success=True, data=resultado)
+
+    except Exception as e:
+        # Em caso de erro, retorna uma mensagem de erro
+        app.logger.error(f"Erro em /api/ml/vendas: {e}")
+        return jsonify(success=False, message=str(e)), 500
+
