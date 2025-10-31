@@ -2,6 +2,11 @@
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
+import logging
+
+# CONFIGURAÇÃO DE LOGGING CENTRALIZADA E CORRIGIDA
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 # Carrega variáveis de ambiente de um arquivo .env (para desenvolvimento local)
 load_dotenv()
