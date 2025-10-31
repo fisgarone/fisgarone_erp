@@ -1,4 +1,4 @@
-# app/services/mercado_livre_service.py - VERSÃO DE ENGENHARIA 4.0 (COMPLETA E FINAL)
+# app/services/mercado_livre_service.py - VERSÃO DE ENGENHARIA 5.0 (FINAL E CORRIGIDA)
 
 import asyncio
 import aiohttp
@@ -13,7 +13,6 @@ from app.models.company import Company, IntegrationConfig
 from app.models.ml_models import VendaML
 import logging
 
-# A configuração de logging será feita no config.py, aqui apenas obtemos o logger.
 logger = logging.getLogger(__name__)
 
 
@@ -21,7 +20,6 @@ class MercadoLivreService:
     def __init__(self, app_context=None):
         self.api_url = os.environ.get("API_URL", "https://api.mercadolibre.com")
         self.app = app_context if app_context else create_app()
-        # Adiciona um User-Agent padrão para simular um cliente HTTP normal.
         self.default_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
@@ -29,9 +27,7 @@ class MercadoLivreService:
     def _get_company_credentials(self, company_id):
         with self.app.app_context():
             config = IntegrationConfig.query.filter_by(company_id=company_id, ml_ativo=True).first()
-            if not config:
-                logger.error(f"Configuração ML ativa não encontrada para empresa {company_id}")
-                return None
+            if not config: return None
             return {
                 'client_id': config.ml_app_id, 'client_secret': config.ml_client_secret,
                 'access_token': config.ml_access_token, 'refresh_token': config.ml_refresh_token,
@@ -44,8 +40,7 @@ class MercadoLivreService:
                 config = IntegrationConfig.query.filter_by(company_id=company_id).first()
                 if config:
                     config.ml_access_token = access_token
-                    if refresh_token:
-                        config.ml_refresh_token = refresh_token
+                    if refresh_token: config.ml_refresh_token = refresh_token
                     config.ml_token_expires = datetime.utcnow() + timedelta(hours=4)
                     config.data_atualizacao = datetime.utcnow()
                     db.session.commit()
@@ -56,20 +51,15 @@ class MercadoLivreService:
 
     async def _make_api_request(self, session, url, method='GET', headers=None, data=None, params=None):
         request_headers = self.default_headers.copy()
-        if headers:
-            request_headers.update(headers)
-
+        if headers: request_headers.update(headers)
         try:
             async with session.request(method, url, headers=request_headers, data=data, params=params) as response:
-                if 200 <= response.status < 300:
-                    return await response.json()
-                # Retorna um dicionário de erro para tratamento específico
-                if response.status in [400, 401, 403]:
-                    return {"error": response.status, "body": await response.text()}
-                logger.error(f"Erro de API não tratado {response.status} em {url}: {await response.text()}")
+                if 200 <= response.status < 300: return await response.json()
+                if response.status in [400, 401, 403]: return {"error": response.status, "body": await response.text()}
+                logger.error(f"Erro de API não tratado {response.status}: {await response.text()}")
                 return None
         except Exception as e:
-            logger.error(f"Exceção na requisição para {url}: {e}")
+            logger.error(f"Exceção na requisição: {e}")
         return None
 
     async def _refresh_token(self, credentials, session):
@@ -77,13 +67,9 @@ class MercadoLivreService:
         payload = {'grant_type': 'refresh_token', 'client_id': credentials['client_id'],
                    'client_secret': credentials['client_secret'], 'refresh_token': credentials['refresh_token']}
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-
         result = await self._make_api_request(session, url, 'POST', headers=headers, data=payload)
-
         if result and isinstance(result, dict) and "error" not in result:
-            logger.info(f"Token renovado com sucesso para empresa {credentials['company_id']}")
             return result.get('access_token'), result.get('refresh_token')
-
         logger.error(f"Falha ao renovar token. Resposta da API: {result}")
         return None, None
 
@@ -117,8 +103,14 @@ class MercadoLivreService:
         logger.info(f"📦 Buscando pedidos de {start_date_str} para empresa {credentials['company_id']}")
 
         while True:
-            params = {'seller_id': credentials['seller_id'], 'sort': 'date_desc',
-                      'order.date_created.from': start_date_str, 'offset': offset, 'limit': limit}
+            # CORREÇÃO FINAL: Forçar a conversão do seller_id para string.
+            params = {
+                'seller': str(credentials['seller_id']),
+                'sort': 'date_desc',
+                'order.date_created.from': start_date_str,
+                'offset': offset,
+                'limit': limit
+            }
             data = await self._make_api_request(session, f"{self.api_url}/orders/search", 'GET', headers=headers,
                                                 params=params)
 
@@ -138,20 +130,18 @@ class MercadoLivreService:
 
             paging = data.get('paging', {})
             offset = paging.get('offset', 0) + paging.get('limit', 50)
-            if offset >= paging.get('total', 0):
-                break
+            if offset >= paging.get('total', 0): break
         logger.info(f"✅ Busca finalizada. Total de {total_pedidos_processados} pedidos lidos.")
         return True
 
     async def _processar_sincronizacao(self, company_id: int, days_back: int = None, hours_back: int = None):
         logger.info(f"🎯 Iniciando sincronização ML para empresa {company_id}")
         credentials = self._get_company_credentials(company_id)
-        if not credentials:
-            return
+        if not credentials: return
 
         async with aiohttp.ClientSession() as session:
             test_url = f"{self.api_url}/orders/search"
-            test_params = {'seller_id': credentials['seller_id'], 'limit': 0}
+            test_params = {'seller': str(credentials['seller_id']), 'limit': 0}
             headers = {"Authorization": f"Bearer {credentials['access_token']}"}
             test_response = await self._make_api_request(session, test_url, 'GET', headers=headers, params=test_params)
 
