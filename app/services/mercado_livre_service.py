@@ -1,4 +1,4 @@
-# app/services/mercado_livre_service.py - VERSÃO FINAL COMPATÍVEL
+# app/services/mercado_livre_service.py - VERSÃO DE ENGENHARIA VALIDADA
 
 import asyncio
 import aiohttp
@@ -13,15 +13,22 @@ from app.models.company import Company, IntegrationConfig
 from app.models.ml_models import VendaML
 import logging
 
+# Configuração de logging padronizada e corrigida
 logging.basicConfig(level=logging.INFO, format='%(asctime )s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
 class MercadoLivreService:
+    """
+    Serviço de integração com a API do Mercado Livre, reconstruído para garantir
+    resiliência, conformidade com a API e eficiência.
+    """
+
     def __init__(self, app_context=None):
         self.api_url = os.environ.get("API_URL", "https://api.mercadolibre.com")
         self.app = app_context if app_context else create_app()
 
+    # --- CAMADA DE ACESSO A DADOS (COM CONTEXTO) ---
     def _get_company_credentials(self, company_id):
         with self.app.app_context():
             config = IntegrationConfig.query.filter_by(company_id=company_id, ml_ativo=True).first()
@@ -29,12 +36,9 @@ class MercadoLivreService:
                 logger.error(f"Configuração ML ativa não encontrada para empresa {company_id}")
                 return None
             return {
-                'client_id': config.ml_app_id,
-                'client_secret': config.ml_client_secret,
-                'access_token': config.ml_access_token,
-                'refresh_token': config.ml_refresh_token,
-                'seller_id': config.ml_seller_id,
-                'company_id': company_id
+                'client_id': config.ml_app_id, 'client_secret': config.ml_client_secret,
+                'access_token': config.ml_access_token, 'refresh_token': config.ml_refresh_token,
+                'seller_id': config.ml_seller_id, 'company_id': company_id
             }
 
     def _update_company_tokens(self, company_id, access_token, refresh_token):
@@ -43,8 +47,7 @@ class MercadoLivreService:
                 config = IntegrationConfig.query.filter_by(company_id=company_id).first()
                 if config:
                     config.ml_access_token = access_token
-                    if refresh_token:
-                        config.ml_refresh_token = refresh_token
+                    if refresh_token: config.ml_refresh_token = refresh_token
                     config.ml_token_expires = datetime.utcnow() + timedelta(hours=4)
                     config.data_atualizacao = datetime.utcnow()
                     db.session.commit()
@@ -53,51 +56,65 @@ class MercadoLivreService:
                 db.session.rollback()
                 logger.error(f"Erro de DB ao atualizar tokens para empresa {company_id}: {e}")
 
+    # --- CAMADA DE REQUISIÇÃO ROBUSTA (BASEADO NO SCRIPT VALIDADO) ---
+    async def _make_api_request(self, session, url, method='GET', headers=None, data=None, params=None, max_retries=3):
+        for attempt in range(max_retries):
+            try:
+                async with session.request(method, url, headers=headers, data=data, params=params) as response:
+                    if 200 <= response.status < 300: return await response.json()
+                    if response.status == 401: return "token_invalido"
+                    if response.status == 429:
+                        logger.warning(f"Rate limit (429) atingido. Aguardando {(attempt + 1) * 2}s.")
+                        await asyncio.sleep((attempt + 1) * 2)
+                        continue
+                    logger.error(f"Erro de API {response.status} em {url}: {await response.text()}")
+                    return None
+            except Exception as e:
+                logger.error(f"Exceção na requisição (tentativa {attempt + 1}): {e}")
+                if attempt < max_retries - 1: await asyncio.sleep(1)
+        return None
+
     async def _refresh_token(self, credentials, session):
         url = f"{self.api_url}/oauth/token"
-        payload = {
-            'grant_type': 'refresh_token',
-            'client_id': credentials['client_id'],
-            'client_secret': credentials['client_secret'],
-            'refresh_token': credentials['refresh_token']
-        }
-        try:
-            async with session.post(url, data=payload) as response:
-                if response.status == 200:
-                    new_tokens = await response.json()
-                    logger.info(f"Token renovado com sucesso para empresa {credentials['company_id']}")
-                    return new_tokens.get('access_token'), new_tokens.get('refresh_token')
-                else:
-                    response_text = await response.text()
-                    logger.error(
-                        f"Erro HTTP ao renovar token para empresa {credentials['company_id']}: {response.status} - {response_text}")
-                    return None, None
-        except Exception as e:
-            logger.error(f"Exceção ao renovar token para empresa {credentials['company_id']}: {e}")
-            return None, None
+        payload = {'grant_type': 'refresh_token', 'client_id': credentials['client_id'],
+                   'client_secret': credentials['client_secret'], 'refresh_token': credentials['refresh_token']}
+        # Header explícito para garantir conformidade com a API
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 
-    async def _processar_sincronizacao(self, company_id: int, days_back: int = None, hours_back: int = None):
-        logger.info(f"🎯 Iniciando sincronização ML para empresa {company_id} (dias={days_back}, horas={hours_back})")
-        credentials = self._get_company_credentials(company_id)
-        if not credentials:
-            return False
+        result = await self._make_api_request(session, url, 'POST', headers=headers, data=payload)
 
-        async with aiohttp.ClientSession() as session:
-            new_access, new_refresh = await self._refresh_token(credentials, session)
-            if new_access:
-                self._update_company_tokens(company_id, new_access, new_refresh)
-                credentials['access_token'] = new_access
-            else:
-                logger.warning(f"⚠️ Falha ao renovar token. Usando token existente do DB.")
+        if result and isinstance(result, dict):
+            logger.info(f"Token renovado com sucesso para empresa {credentials['company_id']}")
+            return result.get('access_token'), result.get('refresh_token')
 
-            if not credentials.get('access_token'):
-                logger.error(f"❌ Sincronização abortada: Access token inválido para empresa {company_id}.")
-                return False
+        logger.error(f"Falha ao renovar token para empresa {credentials['company_id']}. Resposta: {result}")
+        return None, None
 
-            await self._fetch_all_orders_for_company(credentials, session, days_back, hours_back)
+    # --- CAMADA DE PROCESSAMENTO DE DADOS ---
+    async def _process_single_order(self, order_data, credentials):
+        order_id = order_data.get("id")
+        with self.app.app_context():
+            try:
+                for item in order_data.get("order_items", []):
+                    venda = VendaML.query.get(order_id) or VendaML(id_pedido=order_id)
+                    venda.company_id = credentials['company_id']
+                    venda.situacao = order_data.get('status')
+                    venda.data_venda = parser.parse(order_data.get("date_created"))
+                    venda.quantidade = item.get('quantity')
+                    venda.preco_unitario = item.get('unit_price')
+                    venda.mlb = item.get('item', {}).get('id')
+                    venda.sku = item.get('item', {}).get('seller_sku')
+                    venda.titulo = item.get('item', {}).get('title')
+                    venda.taxa_ml = item.get('sale_fee')
+                    db.session.add(venda)
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"Erro ao processar e salvar pedido {order_id}: {e}")
 
-        logger.info(f"✅ Sincronização ML concluída para empresa {company_id}.")
-        return True
+    async def _process_order_batch(self, orders, credentials):
+        tasks = [self._process_single_order(order, credentials) for order in orders]
+        await asyncio.gather(*tasks)
 
     async def _fetch_all_orders_for_company(self, credentials, session, days_back, hours_back):
         headers = {"Authorization": f"Bearer {credentials['access_token']}"}
@@ -110,58 +127,59 @@ class MercadoLivreService:
         while True:
             params = {'seller_id': credentials['seller_id'], 'sort': 'date_desc',
                       'order.date_created.from': start_date_str, 'offset': offset, 'limit': limit}
-            try:
-                async with session.get(f"{self.api_url}/orders/search", headers=headers, params=params) as response:
-                    if response.status != 200:
-                        logger.error(f"Erro de API ao buscar pedidos: {response.status} - {await response.text()}")
-                        break
-                    data = await response.json()
-                    orders = data.get('results', [])
-                    if not orders:
-                        logger.info("📭 Fim da busca. Nenhum pedido adicional encontrado.")
-                        break
+            data = await self._make_api_request(session, f"{self.api_url}/orders/search", 'GET', headers=headers,
+                                                params=params)
 
-                    tasks = [self._process_single_order(order, credentials) for order in orders]
-                    await asyncio.gather(*tasks)
-
-                    total_pedidos_processados += len(orders)
-                    logger.info(
-                        f"🔄 Lote processado. {len(orders)} pedidos. Total acumulado: {total_pedidos_processados}")
-
-                    paging = data.get('paging', {})
-                    offset = paging.get('offset', 0) + paging.get('limit', 50)
-                    if offset >= paging.get('total', 0): break
-            except Exception as e:
-                logger.error(f"❌ Exceção inesperada durante a busca de pedidos: {e}")
+            if data == "token_invalido": return False
+            if not data or not data.get('results'):
+                logger.info("📭 Fim da busca. Nenhum pedido adicional encontrado.")
                 break
+
+            orders = data.get('results', [])
+            await self._process_order_batch(orders, credentials)
+
+            total_pedidos_processados += len(orders)
+            logger.info(f"🔄 Lote processado. {len(orders)} pedidos. Total acumulado: {total_pedidos_processados}")
+
+            paging = data.get('paging', {})
+            offset = paging.get('offset', 0) + paging.get('limit', 50)
+            if offset >= paging.get('total', 0): break
+
         logger.info(f"✅ Busca finalizada. Total de {total_pedidos_processados} pedidos lidos.")
+        return True
 
-    async def _process_single_order(self, order_data, credentials):
-        order_id = order_data.get("id")
-        with self.app.app_context():
-            try:
-                for item in order_data.get("order_items", []):
-                    venda = VendaML.query.get(order_id) or VendaML(id_pedido=order_id)
+    # --- MOTOR DE ORQUESTRAÇÃO ---
+    async def _processar_sincronizacao(self, company_id: int, days_back: int = None, hours_back: int = None):
+        logger.info(f"🎯 Iniciando sincronização ML para empresa {company_id} (dias={days_back}, horas={hours_back})")
+        credentials = self._get_company_credentials(company_id)
+        if not credentials: return False
 
-                    venda.company_id = credentials['company_id']
-                    venda.situacao = order_data.get('status')
-                    venda.data_venda = parser.parse(order_data.get("date_created"))
-                    venda.quantidade = item.get('quantity')
-                    venda.preco_unitario = item.get('unit_price')
-                    venda.mlb = item.get('item', {}).get('id')
-                    venda.sku = item.get('item', {}).get('seller_sku')
-                    venda.titulo = item.get('item', {}).get('title')
-                    venda.taxa_ml = item.get('sale_fee')
+        async with aiohttp.ClientSession() as session:
+            # Validação proativa do token antes de iniciar a busca massiva
+            test_url = f"{self.api_url}/users/me"
+            test_response = await self._make_api_request(session, test_url, 'GET', headers={
+                "Authorization": f"Bearer {credentials['access_token']}"})
 
-                    db.session.add(venda)
-                db.session.commit()
-            except SQLAlchemyError as e:
-                db.session.rollback()
-                logger.error(f"Erro de DB ao processar pedido {order_id}: {e}")
-            except Exception as e:
-                logger.error(f"Erro inesperado ao processar pedido {order_id}: {e}")
+            if test_response == "token_invalido":
+                logger.warning("Token existente inválido. Iniciando processo de renovação.")
+                new_access, new_refresh = await self._refresh_token(credentials, session)
+                if new_access:
+                    self._update_company_tokens(company_id, new_access, new_refresh)
+                    credentials['access_token'] = new_access
+                else:
+                    logger.error(f"❌ Sincronização abortada: Falha crítica ao renovar token para empresa {company_id}.")
+                    return False
+
+            success = await self._fetch_all_orders_for_company(credentials, session, days_back, hours_back)
+            if not success:
+                logger.error(f"❌ Sincronização falhou durante a busca de pedidos para empresa {company_id}.")
+                return False
+
+        logger.info(f"✅ Sincronização ML concluída para empresa {company_id}.")
+        return True
 
 
+# --- PONTOS DE ENTRADA (CRON JOBS) ---
 def sync_full_reconciliation():
     logger.info("CRON JOB: Iniciando fluxo de reconciliação completa (60 dias).")
     app = create_app()
