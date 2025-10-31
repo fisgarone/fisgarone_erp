@@ -1,17 +1,25 @@
-# app/__init__.py - VERSÃO FINAL COM REGISTRO DE BLUEPRINTS
+# app/__init__.py - VERSÃO CONFIGURADA PARA A PASTA 'frontend'
 
 from flask import Flask
 from .extensions import db, migrate
 from config import Config
 
+
 def create_app(config_class=Config):
-    app = Flask(__name__)
+    # --- CONFIGURAÇÃO PARA ARQUITETURA PERSONALIZADA ---
+    # Informa ao Flask para procurar templates e arquivos estáticos na pasta 'frontend'
+    app = Flask(
+        __name__,
+        template_folder='../frontend',  # Caminho relativo para a pasta de templates
+        static_folder='../frontend'  # Caminho relativo para a pasta de arquivos estáticos
+    )
+
     app.config.from_object(config_class)
 
     db.init_app(app)
     migrate.init_app(app, db)
 
-    # --- REGISTRO CENTRALIZADO DE TODOS OS BLUEPRINTS ---
+    # --- REGISTRO DE BLUEPRINTS (Inalterado) ---
     from .routes.main_routes import main_bp
     from .routes.ml_routes import ml_bp
     from .routes.company_routes import company_bp
