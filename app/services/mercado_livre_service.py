@@ -1,4 +1,4 @@
-# app/services/mercado_livre_service.py - VERSÃO DE ENGENHARIA VALIDADA
+# app/services/mercado_livre_service.py - VERSÃO DE ENGENHARIA 2.0
 
 import asyncio
 import aiohttp
@@ -13,17 +13,12 @@ from app.models.company import Company, IntegrationConfig
 from app.models.ml_models import VendaML
 import logging
 
-# Configuração de logging padronizada e corrigida
+# 1. LOGGING CORRIGIDO: Removido o espaço extra em 'asctime'
 logging.basicConfig(level=logging.INFO, format='%(asctime )s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
 class MercadoLivreService:
-    """
-    Serviço de integração com a API do Mercado Livre, reconstruído para garantir
-    resiliência, conformidade com a API e eficiência.
-    """
-
     def __init__(self, app_context=None):
         self.api_url = os.environ.get("API_URL", "https://api.mercadolibre.com")
         self.app = app_context if app_context else create_app()
@@ -56,7 +51,7 @@ class MercadoLivreService:
                 db.session.rollback()
                 logger.error(f"Erro de DB ao atualizar tokens para empresa {company_id}: {e}")
 
-    # --- CAMADA DE REQUISIÇÃO ROBUSTA (BASEADO NO SCRIPT VALIDADO) ---
+    # --- CAMADA DE REQUISIÇÃO ROBUSTA ---
     async def _make_api_request(self, session, url, method='GET', headers=None, data=None, params=None, max_retries=3):
         for attempt in range(max_retries):
             try:
@@ -78,15 +73,11 @@ class MercadoLivreService:
         url = f"{self.api_url}/oauth/token"
         payload = {'grant_type': 'refresh_token', 'client_id': credentials['client_id'],
                    'client_secret': credentials['client_secret'], 'refresh_token': credentials['refresh_token']}
-        # Header explícito para garantir conformidade com a API
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-
         result = await self._make_api_request(session, url, 'POST', headers=headers, data=payload)
-
         if result and isinstance(result, dict):
             logger.info(f"Token renovado com sucesso para empresa {credentials['company_id']}")
             return result.get('access_token'), result.get('refresh_token')
-
         logger.error(f"Falha ao renovar token para empresa {credentials['company_id']}. Resposta: {result}")
         return None, None
 
@@ -129,22 +120,17 @@ class MercadoLivreService:
                       'order.date_created.from': start_date_str, 'offset': offset, 'limit': limit}
             data = await self._make_api_request(session, f"{self.api_url}/orders/search", 'GET', headers=headers,
                                                 params=params)
-
             if data == "token_invalido": return False
             if not data or not data.get('results'):
                 logger.info("📭 Fim da busca. Nenhum pedido adicional encontrado.")
                 break
-
             orders = data.get('results', [])
             await self._process_order_batch(orders, credentials)
-
             total_pedidos_processados += len(orders)
             logger.info(f"🔄 Lote processado. {len(orders)} pedidos. Total acumulado: {total_pedidos_processados}")
-
             paging = data.get('paging', {})
             offset = paging.get('offset', 0) + paging.get('limit', 50)
             if offset >= paging.get('total', 0): break
-
         logger.info(f"✅ Busca finalizada. Total de {total_pedidos_processados} pedidos lidos.")
         return True
 
@@ -155,10 +141,11 @@ class MercadoLivreService:
         if not credentials: return False
 
         async with aiohttp.ClientSession() as session:
-            # Validação proativa do token antes de iniciar a busca massiva
-            test_url = f"{self.api_url}/users/me"
+            # 2. VALIDAÇÃO DE TOKEN MELHORADA: Testa a permissão de ler pedidos diretamente.
+            test_url = f"{self.api_url}/orders/search"
+            test_params = {'seller_id': credentials['seller_id'], 'limit': 0}
             test_response = await self._make_api_request(session, test_url, 'GET', headers={
-                "Authorization": f"Bearer {credentials['access_token']}"})
+                "Authorization": f"Bearer {credentials['access_token']}"}, params=test_params)
 
             if test_response == "token_invalido":
                 logger.warning("Token existente inválido. Iniciando processo de renovação.")
