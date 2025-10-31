@@ -1,5 +1,4 @@
-// js/components/dashboard-manager.js - VERSÃO FINAL, COMPLETA E INTEGRADA
-
+// ===== DASHBOARD MANAGER PREMIUM COMPLETO =====
 class DashboardManager {
     constructor() {
         this.api = new APIIntegration();
@@ -15,19 +14,24 @@ class DashboardManager {
         console.log('🎯 Inicializando Dashboard Executivo...');
 
         try {
+            // Aplicar tema salvo
             this.applyTheme(this.currentTheme);
+
+            // Carregar dados REAIS
             this.data = await this.api.fetchDashboardData();
 
             if (!this.data) {
                 throw new Error('Não foi possível carregar dados do servidor');
             }
 
+            // Renderizar todos os componentes
             await this.renderKPIs();
             await this.renderStrategicKPIs();
             await this.renderInsights();
             await this.renderAnalytics();
             await this.renderSeparatedCharts();
 
+            // Inicializar filtros
             if (window.filtersSystem) {
                 filtersSystem.renderFilterPanel('filters-container');
             }
@@ -40,64 +44,44 @@ class DashboardManager {
         }
     }
 
-    // ===== RENDERIZAÇÃO DE KPIs PRINCIPAIS (COM DADOS REAIS) =====
+    // ===== RENDERIZAÇÃO DE KPIs PRINCIPAIS =====
     async renderKPIs() {
         const container = document.getElementById('kpi-container');
         if (!container) return;
 
         try {
-            // ===== MODIFICAÇÃO PRINCIPAL: USA DADOS REAIS DE this.data.vendas =====
-            const vendasData = this.data.vendas?.data || [];
+            const kpis = this.data.overview?.data?.kpis || await this.getRealKPIs();
 
-            if (vendasData.length === 0) {
-                container.innerHTML = this.getErrorCard('Nenhum dado de venda encontrado. Execute a sincronização.');
-                const fallbackKpis = await this.getRealKPIs(); // Tenta buscar da API antiga como fallback
-                if (fallbackKpis.length > 0) {
-                    container.innerHTML = fallbackKpis.map((kpi, index) => this.createKPICardHTML(kpi, index, "Dados de Cache")).join('');
-                }
-                return;
-            }
+            container.innerHTML = kpis.map((kpi, index) => `
+                <div class="ai-card card-primary"
+                     onclick="dashboard.openKPIModal(${index})"
+                     onmouseenter="dashboard.showTooltip(this, '${kpi.name}')">
 
-            const totalVendas = vendasData.length;
-            const faturamentoBruto = vendasData.reduce((sum, venda) => sum + (venda.preco_unitario * venda.quantidade), 0);
-            const ticketMedio = totalVendas > 0 ? faturamentoBruto / totalVendas : 0;
-            const lucroEstimado = faturamentoBruto * 0.15; // Simulação, pode ser ajustado
-            const faturamentoLiquido = faturamentoBruto * 0.8; // Simulação, pode ser ajustado
+                    <div class="card-header">
+                        <div class="card-icon">
+                            ${this.getKPIIcon(kpi.name)}
+                        </div>
+                        <div>
+                            <div class="card-title">${kpi.name}</div>
+                            <div class="card-subtitle">Atualizado agora</div>
+                        </div>
+                    </div>
 
-            const kpis = [
-                { name: 'Total de Vendas', value: totalVendas, unit: '', trend: '0.0' },
-                { name: 'Faturamento Bruto', value: faturamentoBruto, unit: 'R$', trend: '0.0' },
-                { name: 'Faturamento Líquido', value: faturamentoLiquido, unit: 'R$', trend: '0.0' },
-                { name: 'Ticket Médio', value: ticketMedio, unit: 'R$', trend: '0.0' },
-                { name: 'Lucro Estimado', value: lucroEstimado, unit: 'R$', trend: '0.0' }
-            ];
-            // =======================================================================
+                    <div class="card-value">${this.formatValue(kpi.value, kpi.unit)}</div>
 
-            container.innerHTML = kpis.map((kpi, index) => this.createKPICardHTML(kpi, index, "Dados Reais do DB")).join('');
+                    <div class="card-trend trend-up">
+                        <span>↗️ ${kpi.trend || '0.0'}%</span>
+                    </div>
 
+                    <div class="card-tooltip">
+                        Clique para detalhes de ${kpi.name}
+                    </div>
+                </div>
+            `).join('');
         } catch (error) {
             console.error('Erro ao renderizar KPIs:', error);
             container.innerHTML = this.getErrorCard('Erro ao carregar métricas');
         }
-    }
-
-    createKPICardHTML(kpi, index, subtitle) {
-        return `
-            <div class="ai-card card-primary" onclick="dashboard.openKPIModal(${index})" onmouseenter="dashboard.showTooltip(this, '${kpi.name}')">
-                <div class="card-header">
-                    <div class="card-icon">${this.getKPIIcon(kpi.name)}</div>
-                    <div>
-                        <div class="card-title">${kpi.name}</div>
-                        <div class="card-subtitle">${subtitle}</div>
-                    </div>
-                </div>
-                <div class="card-value">${this.formatValue(kpi.value, kpi.unit)}</div>
-                <div class="card-trend trend-up">
-                    <span>↗️ ${kpi.trend || '0.0'}%</span>
-                </div>
-                <div class="card-tooltip">Clique para detalhes de ${kpi.name}</div>
-            </div>
-        `;
     }
 
     // ===== RENDERIZAÇÃO DE KPIs ESTRATÉGICOS =====
@@ -401,19 +385,7 @@ class DashboardManager {
     // ===== SISTEMA DE MODAIS COMPLETO =====
     openKPIModal(index) {
         try {
-            const vendasData = this.data.vendas?.data || [];
-            const totalVendas = vendasData.length;
-            const faturamentoBruto = vendasData.reduce((sum, venda) => sum + (venda.preco_unitario * venda.quantidade), 0);
-            const ticketMedio = totalVendas > 0 ? faturamentoBruto / totalVendas : 0;
-            const lucroEstimado = faturamentoBruto * 0.15;
-            const faturamentoLiquido = faturamentoBruto * 0.8;
-            const kpis = [
-                { name: 'Total de Vendas', value: totalVendas, unit: '', trend: '0.0' },
-                { name: 'Faturamento Bruto', value: faturamentoBruto, unit: 'R$', trend: '0.0' },
-                { name: 'Faturamento Líquido', value: faturamentoLiquido, unit: 'R$', trend: '0.0' },
-                { name: 'Ticket Médio', value: ticketMedio, unit: 'R$', trend: '0.0' },
-                { name: 'Lucro Estimado', value: lucroEstimado, unit: 'R$', trend: '0.0' }
-            ];
+            const kpis = this.data.overview?.data?.kpis || [];
             const kpi = kpis[index];
 
             if (!kpi) {
@@ -703,7 +675,7 @@ class DashboardManager {
 
     formatValue(value, unit) {
         if (typeof value === 'number') {
-            return unit === 'R$' ? `R$ ${value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : value.toString();
+            return unit === 'R$' ? `R$ ${value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : value.toString();
         }
         return `${value} ${unit || ''}`;
     }
@@ -729,4 +701,125 @@ class DashboardManager {
                 <div class="card-icon">❌</div>
                 <div class="card-title">Erro no Carregamento</div>
                 <div class="card-subtitle">${message}</div>
-                <button onclick="dashboard.initialize()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--ai-primary-500); color: white; border: none; border-radius: var(--ai-radius-
+                <button onclick="dashboard.initialize()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--ai-primary-500); color: white; border: none; border-radius: var(--ai-radius-md); cursor: pointer;">
+                    🔄 Tentar Novamente
+                </button>
+            </div>
+        `;
+    }
+
+    getFallbackStrategicKPIs() {
+        // Fallback apenas se API falhar - valores zerados
+        return [
+            {
+                name: 'Margem Média',
+                value: '0.0%',
+                icon: '📊',
+                color: 'success',
+                trend: '+0.0%',
+                description: 'Margem líquida média dos produtos'
+            },
+            {
+                name: 'Custo Frete Médio',
+                value: 'R$ 0,00',
+                icon: '🚚',
+                color: 'warning',
+                trend: '+0.0%',
+                description: 'Custo médio de frete por venda'
+            },
+            {
+                name: 'Taxa ML Média',
+                value: '0.0%',
+                icon: '💳',
+                color: 'info',
+                trend: '+0.0%',
+                description: 'Taxa média cobrada pelo Mercado Livre'
+            },
+            {
+                name: 'Conversão',
+                value: '0.0%',
+                icon: '🎯',
+                color: 'primary',
+                trend: '+0.0%',
+                description: 'Taxa de conversão de visitas em vendas'
+            },
+            {
+                name: 'Custo Aquisição',
+                value: 'R$ 0,00',
+                icon: '💰',
+                color: 'warning',
+                trend: '+0.0%',
+                description: 'Custo por cliente adquirido'
+            }
+        ];
+    }
+
+    setLoading(loading) {
+        this.isLoading = loading;
+
+        // Atualizar UI para estado de loading
+        const buttons = document.querySelectorAll('.ai-btn');
+        buttons.forEach(btn => {
+            if (loading) {
+                btn.disabled = true;
+                if (btn.textContent.includes('Atualizar')) {
+                    btn.innerHTML = '<span>⏳</span> Atualizando...';
+                }
+            } else {
+                btn.disabled = false;
+                if (btn.textContent.includes('Atualizando')) {
+                    btn.innerHTML = '<span>🔄</span> Atualizar';
+                }
+            }
+        });
+    }
+
+    showError(message) {
+        const container = document.getElementById('kpi-container');
+        if (container) {
+            container.innerHTML = this.getErrorCard(message);
+        }
+    }
+
+    showNotification(message, type = 'info') {
+        // Sistema de notificação simples
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? 'var(--ai-secondary-500)' : type === 'error' ? 'var(--ai-error-500)' : 'var(--ai-primary-500)'};
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: var(--ai-radius-lg);
+            box-shadow: var(--ai-shadow-lg);
+            z-index: 10000;
+            animation: slideInRight 0.3s ease-out;
+        `;
+        notification.textContent = message;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = 'slideOutRight 0.3s ease-in';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
+
+    scrollToTop() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ===== DESTRUIDOR =====
+    destroy() {
+        if (window.chartsSystem) {
+            chartsSystem.destroyAllCharts();
+        }
+        console.log('🧹 Dashboard destruído');
+    }
+}
+
+// Instância global
+window.dashboard = new DashboardManager();
