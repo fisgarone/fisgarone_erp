@@ -1,4 +1,4 @@
-# app/services/mercado_livre_service.py - VERSÃO DE ENGENHARIA 3.0 COMPLETA
+# app/services/mercado_livre_service.py - VERSÃO DE ENGENHARIA 4.0 (COMPLETA E FINAL)
 
 import asyncio
 import aiohttp
@@ -13,8 +13,7 @@ from app.models.company import Company, IntegrationConfig
 from app.models.ml_models import VendaML
 import logging
 
-# CORREÇÃO DE LOGGING: Espaço removido de 'asctime'
-logging.basicConfig(level=logging.INFO, format='%(asctime )s - %(levelname)s - %(message)s')
+# A configuração de logging será feita no config.py, aqui apenas obtemos o logger.
 logger = logging.getLogger(__name__)
 
 
@@ -22,6 +21,10 @@ class MercadoLivreService:
     def __init__(self, app_context=None):
         self.api_url = os.environ.get("API_URL", "https://api.mercadolibre.com")
         self.app = app_context if app_context else create_app()
+        # Adiciona um User-Agent padrão para simular um cliente HTTP normal.
+        self.default_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
 
     def _get_company_credentials(self, company_id):
         with self.app.app_context():
@@ -52,15 +55,18 @@ class MercadoLivreService:
                 logger.error(f"Erro de DB ao atualizar tokens: {e}")
 
     async def _make_api_request(self, session, url, method='GET', headers=None, data=None, params=None):
+        request_headers = self.default_headers.copy()
+        if headers:
+            request_headers.update(headers)
+
         try:
-            async with session.request(method, url, headers=headers, data=data, params=params) as response:
+            async with session.request(method, url, headers=request_headers, data=data, params=params) as response:
                 if 200 <= response.status < 300:
                     return await response.json()
-                if response.status in [401, 403]:
-                    logger.warning(
-                        f"Requisição não autorizada ({response.status}) para {url}. Marcando como token inválido.")
-                    return "token_invalido"
-                logger.error(f"Erro de API {response.status} em {url}: {await response.text()}")
+                # Retorna um dicionário de erro para tratamento específico
+                if response.status in [400, 401, 403]:
+                    return {"error": response.status, "body": await response.text()}
+                logger.error(f"Erro de API não tratado {response.status} em {url}: {await response.text()}")
                 return None
         except Exception as e:
             logger.error(f"Exceção na requisição para {url}: {e}")
@@ -71,9 +77,13 @@ class MercadoLivreService:
         payload = {'grant_type': 'refresh_token', 'client_id': credentials['client_id'],
                    'client_secret': credentials['client_secret'], 'refresh_token': credentials['refresh_token']}
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+
         result = await self._make_api_request(session, url, 'POST', headers=headers, data=payload)
-        if result and isinstance(result, dict) and result.get('access_token'):
+
+        if result and isinstance(result, dict) and "error" not in result:
+            logger.info(f"Token renovado com sucesso para empresa {credentials['company_id']}")
             return result.get('access_token'), result.get('refresh_token')
+
         logger.error(f"Falha ao renovar token. Resposta da API: {result}")
         return None, None
 
@@ -111,8 +121,11 @@ class MercadoLivreService:
                       'order.date_created.from': start_date_str, 'offset': offset, 'limit': limit}
             data = await self._make_api_request(session, f"{self.api_url}/orders/search", 'GET', headers=headers,
                                                 params=params)
-            if data == "token_invalido":
+
+            if data and isinstance(data, dict) and data.get("error"):
+                logger.error(f"Erro ao buscar pedidos: {data}")
                 return False
+
             if not data or not data.get('results'):
                 logger.info("📭 Fim da busca. Nenhum pedido adicional encontrado.")
                 break
@@ -137,12 +150,14 @@ class MercadoLivreService:
             return
 
         async with aiohttp.ClientSession() as session:
-            test_url = f"{self.api_url}/users/me"
-            test_response = await self._make_api_request(session, test_url, 'GET', headers={
-                "Authorization": f"Bearer {credentials['access_token']}"})
+            test_url = f"{self.api_url}/orders/search"
+            test_params = {'seller_id': credentials['seller_id'], 'limit': 0}
+            headers = {"Authorization": f"Bearer {credentials['access_token']}"}
+            test_response = await self._make_api_request(session, test_url, 'GET', headers=headers, params=test_params)
 
-            if test_response == "token_invalido":
-                logger.warning("Token de acesso inválido ou expirado. Tentando renovar...")
+            if test_response and isinstance(test_response, dict) and test_response.get("error"):
+                logger.warning(
+                    f"Token de acesso inválido ou com permissão negada ({test_response.get('error')}). Tentando renovar...")
                 new_access, new_refresh = await self._refresh_token(credentials, session)
                 if new_access:
                     self._update_company_tokens(company_id, new_access, new_refresh)
@@ -151,7 +166,11 @@ class MercadoLivreService:
                     logger.error(f"❌ Falha crítica ao renovar token para empresa {company_id}. Sincronização abortada.")
                     return
 
-            await self._fetch_all_orders_for_company(credentials, session, days_back, hours_back)
+            success = await self._fetch_all_orders_for_company(credentials, session, days_back, hours_back)
+            if not success:
+                logger.error(f"❌ Sincronização falhou durante a busca de pedidos para empresa {company_id}.")
+                return
+
         logger.info(f"✅ Sincronização ML concluída para empresa {company_id}.")
 
 
@@ -160,6 +179,9 @@ def sync_full_reconciliation():
     app = create_app()
     with app.app_context():
         companies = Company.query.filter_by(ativo=True).all()
+        if not companies:
+            logger.warning("Nenhuma empresa ativa encontrada para sincronização.")
+            return
         service = MercadoLivreService(app_context=app)
         for company in companies:
             asyncio.run(service._processar_sincronizacao(company.id, days_back=60))
@@ -171,6 +193,9 @@ def sync_recent_orders():
     app = create_app()
     with app.app_context():
         companies = Company.query.filter_by(ativo=True).all()
+        if not companies:
+            logger.warning("Nenhuma empresa ativa encontrada para sincronização.")
+            return
         service = MercadoLivreService(app_context=app)
         for company in companies:
             asyncio.run(service._processar_sincronizacao(company.id, hours_back=2))
