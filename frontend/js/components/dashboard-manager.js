@@ -15,24 +15,19 @@ class DashboardManager {
         console.log('🎯 Inicializando Dashboard Executivo...');
 
         try {
-            // Aplicar tema salvo
             this.applyTheme(this.currentTheme);
-
-            // Carregar todos os dados do backend
             this.data = await this.api.fetchDashboardData();
 
             if (!this.data) {
                 throw new Error('Não foi possível carregar dados do servidor');
             }
 
-            // Renderizar todos os componentes
-            await this.renderKPIs(); // Esta função agora usa os dados reais
+            await this.renderKPIs();
             await this.renderStrategicKPIs();
             await this.renderInsights();
             await this.renderAnalytics();
             await this.renderSeparatedCharts();
 
-            // Inicializar filtros
             if (window.filtersSystem) {
                 filtersSystem.renderFilterPanel('filters-container');
             }
@@ -56,26 +51,18 @@ class DashboardManager {
 
             if (vendasData.length === 0) {
                 container.innerHTML = this.getErrorCard('Nenhum dado de venda encontrado. Execute a sincronização.');
-                // Ainda assim, busca os KPIs de fallback para não deixar a tela totalmente vazia
-                const fallbackKpis = await this.getRealKPIs();
-                 container.innerHTML = fallbackKpis.map((kpi, index) => `
-                    <div class="ai-card card-primary">
-                        <div class="card-header">
-                            <div class="card-icon">${this.getKPIIcon(kpi.name)}</div>
-                            <div class="card-title">${kpi.name}</div>
-                        </div>
-                        <div class="card-value">${this.formatValue(kpi.value, kpi.unit)}</div>
-                        <div class="card-subtitle">Sem dados reais</div>
-                    </div>
-                `).join('');
+                const fallbackKpis = await this.getRealKPIs(); // Tenta buscar da API antiga como fallback
+                if (fallbackKpis.length > 0) {
+                    container.innerHTML = fallbackKpis.map((kpi, index) => this.createKPICardHTML(kpi, index, "Dados de Cache")).join('');
+                }
                 return;
             }
 
             const totalVendas = vendasData.length;
             const faturamentoBruto = vendasData.reduce((sum, venda) => sum + (venda.preco_unitario * venda.quantidade), 0);
             const ticketMedio = totalVendas > 0 ? faturamentoBruto / totalVendas : 0;
-            const lucroEstimado = faturamentoBruto * 0.15; // Simulação de 15% de margem
-            const faturamentoLiquido = faturamentoBruto * 0.8; // Simulação
+            const lucroEstimado = faturamentoBruto * 0.15; // Simulação, pode ser ajustado
+            const faturamentoLiquido = faturamentoBruto * 0.8; // Simulação, pode ser ajustado
 
             const kpis = [
                 { name: 'Total de Vendas', value: totalVendas, unit: '', trend: '0.0' },
@@ -86,36 +73,31 @@ class DashboardManager {
             ];
             // =======================================================================
 
-            container.innerHTML = kpis.map((kpi, index) => `
-                <div class="ai-card card-primary"
-                     onclick="dashboard.openKPIModal(${index})"
-                     onmouseenter="dashboard.showTooltip(this, '${kpi.name}')">
+            container.innerHTML = kpis.map((kpi, index) => this.createKPICardHTML(kpi, index, "Dados Reais do DB")).join('');
 
-                    <div class="card-header">
-                        <div class="card-icon">
-                            ${this.getKPIIcon(kpi.name)}
-                        </div>
-                        <div>
-                            <div class="card-title">${kpi.name}</div>
-                            <div class="card-subtitle">Dados Reais do DB</div>
-                        </div>
-                    </div>
-
-                    <div class="card-value">${this.formatValue(kpi.value, kpi.unit)}</div>
-
-                    <div class="card-trend trend-up">
-                        <span>↗️ ${kpi.trend || '0.0'}%</span>
-                    </div>
-
-                    <div class="card-tooltip">
-                        Clique para detalhes de ${kpi.name}
-                    </div>
-                </div>
-            `).join('');
         } catch (error) {
             console.error('Erro ao renderizar KPIs:', error);
             container.innerHTML = this.getErrorCard('Erro ao carregar métricas');
         }
+    }
+
+    createKPICardHTML(kpi, index, subtitle) {
+        return `
+            <div class="ai-card card-primary" onclick="dashboard.openKPIModal(${index})" onmouseenter="dashboard.showTooltip(this, '${kpi.name}')">
+                <div class="card-header">
+                    <div class="card-icon">${this.getKPIIcon(kpi.name)}</div>
+                    <div>
+                        <div class="card-title">${kpi.name}</div>
+                        <div class="card-subtitle">${subtitle}</div>
+                    </div>
+                </div>
+                <div class="card-value">${this.formatValue(kpi.value, kpi.unit)}</div>
+                <div class="card-trend trend-up">
+                    <span>↗️ ${kpi.trend || '0.0'}%</span>
+                </div>
+                <div class="card-tooltip">Clique para detalhes de ${kpi.name}</div>
+            </div>
+        `;
     }
 
     // ===== RENDERIZAÇÃO DE KPIs ESTRATÉGICOS =====
@@ -425,7 +407,6 @@ class DashboardManager {
             const ticketMedio = totalVendas > 0 ? faturamentoBruto / totalVendas : 0;
             const lucroEstimado = faturamentoBruto * 0.15;
             const faturamentoLiquido = faturamentoBruto * 0.8;
-
             const kpis = [
                 { name: 'Total de Vendas', value: totalVendas, unit: '', trend: '0.0' },
                 { name: 'Faturamento Bruto', value: faturamentoBruto, unit: 'R$', trend: '0.0' },
@@ -433,7 +414,6 @@ class DashboardManager {
                 { name: 'Ticket Médio', value: ticketMedio, unit: 'R$', trend: '0.0' },
                 { name: 'Lucro Estimado', value: lucroEstimado, unit: 'R$', trend: '0.0' }
             ];
-
             const kpi = kpis[index];
 
             if (!kpi) {
@@ -721,6 +701,13 @@ class DashboardManager {
         console.log('Tooltip:', content);
     }
 
+    formatValue(value, unit) {
+        if (typeof value === 'number') {
+            return unit === 'R$' ? `R$ ${value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : value.toString();
+        }
+        return `${value} ${unit || ''}`;
+    }
+
     formatCurrency(value) {
         return value.toLocaleString('pt-BR', {minimumFractionDigits: 2});
     }
@@ -742,35 +729,4 @@ class DashboardManager {
                 <div class="card-icon">❌</div>
                 <div class="card-title">Erro no Carregamento</div>
                 <div class="card-subtitle">${message}</div>
-                <button onclick="dashboard.initialize()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--ai-primary-500); color: white; border: none; border-radius: var(--ai-radius-md); cursor: pointer;">
-                    🔄 Tentar Novamente
-                </button>
-            </div>
-        `;
-    }
-
-    getFallbackStrategicKPIs() {
-        // Fallback apenas se API falhar - valores zerados
-        return [
-            {
-                name: 'Margem Média',
-                value: '0.0%',
-                icon: '📊',
-                color: 'success',
-                trend: '+0.0%',
-                description: 'Margem líquida média dos produtos'
-            },
-            {
-                name: 'Custo Frete Médio',
-                value: 'R$ 0,00',
-                icon: '🚚',
-                color: 'warning',
-                trend: '+0.0%',
-                description: 'Custo médio de frete por venda'
-            },
-            {
-                name: 'Taxa ML Média',
-                value: '0.0%',
-                icon: '💳',
-                color: 'info',
-                trend:
+                <button onclick="dashboard.initialize()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: var(--ai-primary-500); color: white; border: none; border-radius: var(--ai-radius-
