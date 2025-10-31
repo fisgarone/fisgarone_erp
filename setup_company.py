@@ -23,6 +23,7 @@ with app.app_context():
         ml_app_id = os.environ.get(f'EMPRESA{i}_ML_APP_ID')
         ml_client_secret = os.environ.get(f'EMPRESA{i}_ML_CLIENT_SECRET')
         ml_refresh_token = os.environ.get(f'EMPRESA{i}_ML_REFRESH_TOKEN')
+        ml_seller_id = os.environ.get(f'EMPRESA{i}_ML_SELLER_ID')  # <-- ADICIONE ESTA LINHA
 
         print(f"\n--- Processando {nome_fantasia} ---")
 
@@ -56,6 +57,7 @@ with app.app_context():
         integration.ml_app_id = ml_app_id
         integration.ml_client_secret = ml_client_secret
         integration.ml_refresh_token = ml_refresh_token
+        integration.ml_seller_id = ml_seller_id  # <-- ADICIONE ESTA LINHA
 
         db.session.commit()
         print(f"✅ {nome_fantasia} configurada com sucesso.")

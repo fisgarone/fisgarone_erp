@@ -64,6 +64,7 @@ class IntegrationConfig(db.Model):
 
     # Mercado Livre
     ml_ativo = db.Column(db.Boolean, default=False)
+    ml_seller_id = db.Column(db.String(50), nullable=True)
     ml_app_id = db.Column(db.String(100))
     ml_client_secret = db.Column(db.String(100))
     ml_access_token = db.Column(db.Text)
