@@ -6,13 +6,14 @@
     <title>FISGARONE AI • Dashboard Inteligente</title>
 
     <!-- Design System Premium -->
-    <link rel="stylesheet" href="css/foundation/colors.css">
-    <link rel="stylesheet" href="css/foundation/typography.css">
-    <link rel="stylesheet" href="css/components/ai-cards.css">
-    <link rel="stylesheet" href="css/components/ai-buttons.css">
-    <link rel="stylesheet" href="css/components/filters.css">
-    <link rel="stylesheet" href="css/components/charts.css">
-    <link rel="stylesheet" href="css/layouts/main-layout.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/foundation/colors.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/foundation/typography.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/ai-cards.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/ai-buttons.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/filters.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/charts.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/layouts/main-layout.css') }}">
+
 
     <!-- Fontes Premium -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -202,12 +203,13 @@
     <div id="modal-container"></div>
 
     <!-- Scripts Premium - ORDEM CORRIGIDA -->
-<script src="js/core/ai-engine.js"></script>
-<script src="js/services/api-integration.js"></script>
-<script src="js/components/modal-system.js"></script>
-<script src="js/components/filters-system.js"></script>
-<script src="js/components/charts-system.js"></script>
-<script src="js/components/dashboard-manager.js"></script>
+<script src="{{ url_for('static', filename='js/core/ai-engine.js') }}"></script>
+<script src="{{ url_for('static', filename='js/services/api-integration.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/modal-system.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/filters-system.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/charts-system.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/dashboard-manager.js') }}"></script>
+
 
     <!-- Inicialização -->
     <script>
