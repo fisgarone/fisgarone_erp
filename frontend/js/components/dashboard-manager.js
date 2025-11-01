@@ -183,9 +183,9 @@ class DashboardManager {
                             <div class="card-subtitle">Performance Comercial</div>
                         </div>
                     </div>
-                    <div class="card-value">R$ ${this.formatCurrency(overview.faturamento_bruto || 0)}</div>
+                    <div class="card-value">R$ ${this.formatCurrency(overview.raw_data?.bruto || 0)}</div>
                     <div class="card-trend trend-up">
-                        <span>↗️ ${overview.crescimento || '0.0'}% vs último mês</span>
+                        <span>↗️ ${overview.raw_data?.crescimento || '0.0'}% vs último mês</span>
                     </div>
                 </div>
 
@@ -292,7 +292,7 @@ class DashboardManager {
             if (!response.ok) throw new Error('API não respondeu');
 
             const data = await response.json();
-            return data.kpis || [];
+            return data.data.kpis || [];
         } catch (error) {
             console.error('Erro ao buscar KPIs reais:', error);
             return [];
@@ -362,7 +362,7 @@ class DashboardManager {
             if (!response.ok) throw new Error('API trends não respondeu');
 
             const data = await response.json();
-            return data.sales_data || [];
+            return data.data || [];
         } catch (error) {
             console.error('Erro ao buscar dados de tendências:', error);
             return [];
@@ -375,7 +375,7 @@ class DashboardManager {
             if (!response.ok) throw new Error('API ABC não respondeu');
 
             const data = await response.json();
-            return data.items || [];
+            return data.data.produtos || [];
         } catch (error) {
             console.error('Erro ao buscar dados ABC:', error);
             return [];
