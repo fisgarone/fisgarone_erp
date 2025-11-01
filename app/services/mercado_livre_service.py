@@ -1,4 +1,4 @@
-# app/services/mercado_livre_service.py - VERSÃO FINAL CORRIGIDA
+# app/services/mercado_livre_service.py - VERSÃO CORRIGIDA COM DADOS FINANCEIROS COMPLETOS
 
 import asyncio
 import aiohttp
@@ -84,31 +84,87 @@ class MercadoLivreService:
 
     async def _process_single_order(self, order_data, credentials):
         """
-        CORREÇÃO CRÍTICA: Converter order_id para string antes de buscar no banco
+        CORREÇÃO CRÍTICA: Extrair TODOS os dados financeiros da API do Mercado Livre
+
+        Estrutura da API do ML:
+        - payments[0].transaction_amount = valor total pago pelo cliente
+        - payments[0].shipping_cost = custo de frete pago pelo cliente
+        - order_items[].sale_fee = taxa do ML por item
+        - shipping.cost = custo de frete do vendedor
         """
         try:
             order_id = order_data.get("id")
-            # ✅ CORREÇÃO: Converter para string para compatibilidade com VARCHAR
             order_id_str = str(order_id)
-            
+
+            # ===== EXTRAIR DADOS FINANCEIROS DO PEDIDO =====
+            payments = order_data.get("payments", [])
+            shipping_info = order_data.get("shipping", {})
+
+            # Valores do pagamento
+            payment_data = payments[0] if payments else {}
+            transaction_amount = payment_data.get("transaction_amount", 0)
+            shipping_cost_paid = payment_data.get("shipping_cost", 0)  # Frete pago pelo cliente
+
+            # Custos do vendedor
+            seller_shipping_cost = shipping_info.get("cost", 0)  # Custo de frete do vendedor
+
             for item in order_data.get("order_items", []):
-                # Buscar pelo ID convertido para string
+                # Buscar ou criar venda
                 venda = VendaML.query.get(order_id_str) or VendaML(id_pedido=order_id_str)
+
+                # ===== DADOS BÁSICOS =====
                 venda.company_id = credentials['company_id']
                 venda.situacao = order_data.get('status')
                 venda.data_venda = parser.parse(order_data.get("date_created")).strftime('%d/%m/%Y')
-                venda.quantidade = item.get('quantity')
-                venda.preco_unitario = item.get('unit_price')
+                venda.quantidade = item.get('quantity', 1)
+                venda.preco_unitario = item.get('unit_price', 0)
                 venda.mlb = item.get('item', {}).get('id')
                 venda.sku = item.get('item', {}).get('seller_sku')
                 venda.titulo = item.get('item', {}).get('title')
-                venda.taxa_ml = item.get('sale_fee', 0)
+
+                # ===== DADOS FINANCEIROS COMPLETOS =====
+                # Taxa do Mercado Livre (comissão por venda)
+                sale_fee = item.get('sale_fee', 0)
+                venda.taxa_ml = sale_fee
+                venda.comissoes = sale_fee  # Comissão do ML
+
+                # Taxa fixa do ML (geralmente incluída no sale_fee, mas pode ser separada)
+                venda.taxa_fixa_ml = item.get('listing_type_fee', 0)
+
+                # Custo de frete do vendedor
+                venda.frete_seller = seller_shipping_cost
+
+                # ===== CÁLCULO DO LUCRO REAL =====
+                # Faturamento bruto = preço unitário × quantidade
+                faturamento_bruto = venda.preco_unitario * venda.quantidade
+
+                # Custos totais = comissão ML + taxa fixa + frete do vendedor
+                custos_totais = venda.comissoes + venda.taxa_fixa_ml + venda.frete_seller
+
+                # Lucro real = faturamento bruto - custos totais
+                venda.lucro_real = faturamento_bruto - custos_totais
+
+                # ===== DADOS ADICIONAIS =====
+                venda.conta = credentials.get('seller_id')
+                venda.data_atualizacao = datetime.utcnow()
+
                 db.session.add(venda)
+
+                logger.debug(
+                    f"✅ Pedido {order_id_str}: "
+                    f"Bruto=R${faturamento_bruto:.2f}, "
+                    f"Taxa ML=R${venda.comissoes:.2f}, "
+                    f"Frete=R${venda.frete_seller:.2f}, "
+                    f"Lucro=R${venda.lucro_real:.2f}"
+                )
+
             db.session.commit()
             logger.debug(f"✅ Pedido {order_id_str} salvo com sucesso")
+
         except Exception as e:
             db.session.rollback()
             logger.error(f"❌ Erro ao salvar pedido {order_data.get('id')}: {e}")
+            logger.exception(e)  # Log completo do erro para debug
 
     async def _fetch_all_orders_for_company(self, credentials, session, days_back, hours_back):
         headers = {"Authorization": f"Bearer {credentials['access_token']}"}
@@ -162,7 +218,7 @@ class MercadoLivreService:
             test_params = {'seller': str(credentials['seller_id']), 'limit': 0}
             headers = {"Authorization": f"Bearer {credentials['access_token']}"}
             test_response = await self._make_api_request(session, test_url, 'GET', headers=headers,
-                                                          params=test_params)
+                                                         params=test_params)
 
             if test_response and isinstance(test_response, dict) and test_response.get("error"):
                 logger.warning(
