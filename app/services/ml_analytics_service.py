@@ -32,10 +32,19 @@ class MLAnalyticsService:
                 return None
 
     def _get_default_period(self, start, end):
+        """
+        Retorna o período padrão para as análises.
+
+        Se os parâmetros de início e fim forem fornecidos, usa esses valores.
+        Caso contrário, retorna os últimos 60 dias até a data atual.
+        Isso garante que a análise cubra um intervalo dinâmico em vez de ficar
+        presa ao primeiro dia do mês. O período é retornado como objetos
+        `date` para facilitar as comparações no banco de dados.
+        """
         if start and end:
             return start, end
         today = datetime.now().date()
-        start_date = today.replace(day=1)
+        start_date = today - timedelta(days=60)
         end_date = today
         return start_date, end_date
 
