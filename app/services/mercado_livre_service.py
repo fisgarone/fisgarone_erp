@@ -1,4 +1,4 @@
-# app/services/mercado_livre_service.py - VERSÃO CORRIGIDA SEM IMPORTAÇÃO CIRCULAR
+# app/services/mercado_livre_service.py - VERSÃO FINAL CORRIGIDA
 
 import asyncio
 import aiohttp
@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import pytz
 from dateutil import parser
 from sqlalchemy.exc import SQLAlchemyError
-from flask import current_app  # ← CORREÇÃO: Usar current_app em vez de create_app
+from flask import current_app
 from app.extensions import db
 from app.models.company import Company, IntegrationConfig
 from app.models.ml_models import VendaML
@@ -18,17 +18,12 @@ logger = logging.getLogger(__name__)
 
 class MercadoLivreService:
     def __init__(self):
-        """
-        CORREÇÃO: Removida a dependência de app_context no __init__.
-        O serviço agora usa current_app quando precisa do contexto da aplicação.
-        """
         self.api_url = os.environ.get("API_URL", "https://api.mercadolibre.com")
         self.default_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
 
     def _get_company_credentials(self, company_id):
-        """Busca credenciais da empresa no banco de dados"""
         config = IntegrationConfig.query.filter_by(company_id=company_id, ml_ativo=True).first()
         if not config:
             return None
@@ -42,7 +37,6 @@ class MercadoLivreService:
         }
 
     def _update_company_tokens(self, company_id, access_token, refresh_token):
-        """Atualiza tokens no banco de dados"""
         try:
             config = IntegrationConfig.query.filter_by(company_id=company_id).first()
             if config:
@@ -58,7 +52,6 @@ class MercadoLivreService:
             logger.error(f"Erro de DB ao atualizar tokens: {e}")
 
     async def _make_api_request(self, session, url, method='GET', headers=None, data=None, params=None):
-        """Faz requisições HTTP assíncronas para a API do Mercado Livre"""
         request_headers = self.default_headers.copy()
         if headers:
             request_headers.update(headers)
@@ -75,7 +68,6 @@ class MercadoLivreService:
         return None
 
     async def _refresh_token(self, credentials, session):
-        """Renova o token de acesso usando o refresh token"""
         url = f"{self.api_url}/oauth/token"
         payload = {
             'grant_type': 'refresh_token',
@@ -91,28 +83,34 @@ class MercadoLivreService:
         return None, None
 
     async def _process_single_order(self, order_data, credentials):
-        """Processa e salva um único pedido no banco de dados"""
+        """
+        CORREÇÃO CRÍTICA: Converter order_id para string antes de buscar no banco
+        """
         try:
             order_id = order_data.get("id")
+            # ✅ CORREÇÃO: Converter para string para compatibilidade com VARCHAR
+            order_id_str = str(order_id)
+            
             for item in order_data.get("order_items", []):
-                venda = VendaML.query.get(order_id) or VendaML(id_pedido=order_id)
+                # Buscar pelo ID convertido para string
+                venda = VendaML.query.get(order_id_str) or VendaML(id_pedido=order_id_str)
                 venda.company_id = credentials['company_id']
                 venda.situacao = order_data.get('status')
-                venda.data_venda = parser.parse(order_data.get("date_created"))
+                venda.data_venda = parser.parse(order_data.get("date_created")).strftime('%d/%m/%Y')
                 venda.quantidade = item.get('quantity')
                 venda.preco_unitario = item.get('unit_price')
                 venda.mlb = item.get('item', {}).get('id')
                 venda.sku = item.get('item', {}).get('seller_sku')
                 venda.titulo = item.get('item', {}).get('title')
-                venda.taxa_ml = item.get('sale_fee')
+                venda.taxa_ml = item.get('sale_fee', 0)
                 db.session.add(venda)
             db.session.commit()
+            logger.debug(f"✅ Pedido {order_id_str} salvo com sucesso")
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Erro ao salvar pedido {order_data.get('id')}: {e}")
+            logger.error(f"❌ Erro ao salvar pedido {order_data.get('id')}: {e}")
 
     async def _fetch_all_orders_for_company(self, credentials, session, days_back, hours_back):
-        """Busca todos os pedidos de uma empresa na API do Mercado Livre"""
         headers = {"Authorization": f"Bearer {credentials['access_token']}"}
         now_br = datetime.now(pytz.timezone('America/Sao_Paulo'))
         start_date = now_br - (timedelta(days=days_back) if days_back else timedelta(hours=hours_back or 1))
@@ -153,10 +151,10 @@ class MercadoLivreService:
         return True
 
     async def _processar_sincronizacao(self, company_id: int, days_back: int = None, hours_back: int = None):
-        """Processa a sincronização de pedidos para uma empresa"""
         logger.info(f"🎯 Iniciando sincronização ML para empresa {company_id}")
         credentials = self._get_company_credentials(company_id)
         if not credentials:
+            logger.warning(f"❌ Nenhuma credencial ativa encontrada para empresa {company_id}")
             return
 
         async with aiohttp.ClientSession() as session:
@@ -185,21 +183,12 @@ class MercadoLivreService:
         logger.info(f"✅ Sincronização ML concluída para empresa {company_id}.")
 
     def sync_orders(self, company_id: int, days_back: int = 7):
-        """
-        Método público para sincronizar pedidos (chamado pelas rotas da API).
-        CORREÇÃO: Não precisa mais criar app_context, usa o contexto atual.
-        """
         asyncio.run(self._processar_sincronizacao(company_id, days_back=days_back))
         return {"success": True, "message": f"Sincronização iniciada para empresa {company_id}"}
 
 
-# ===== FUNÇÕES PARA CRON JOBS =====
-# CORREÇÃO: Estas funções agora usam current_app em vez de create_app()
-
 def sync_full_reconciliation():
-    """Sincronização completa de 60 dias (CRON JOB)"""
     logger.info("CRON JOB: Iniciando fluxo de reconciliação completa (60 dias).")
-    # CORREÇÃO: Usar current_app que já está no contexto do Flask
     companies = Company.query.filter_by(ativo=True).all()
     if not companies:
         logger.warning("Nenhuma empresa ativa encontrada para sincronização.")
@@ -211,7 +200,6 @@ def sync_full_reconciliation():
 
 
 def sync_recent_orders():
-    """Sincronização de pedidos recentes de 2 horas (CRON JOB)"""
     logger.info("CRON JOB: Iniciando fluxo de sincronização de pedidos recentes (2 horas).")
     companies = Company.query.filter_by(ativo=True).all()
     if not companies:
