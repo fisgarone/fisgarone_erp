@@ -49,7 +49,7 @@ class DashboardManager {
         if (!container) return;
 
         try {
-            const kpis = this.data.overview?.data?.kpis || [];
+            const kpis = this.data.data?.kpis || [];
             console.log('📊 KPIs recebidos:', kpis);
             
             if (kpis.length === 0) {
@@ -376,7 +376,7 @@ class DashboardManager {
     // ===== SISTEMA DE MODAIS COMPLETO =====
     openKPIModal(index) {
         try {
-            const kpis = this.data.overview?.data?.kpis || [];
+            const kpis = this.data.data?.kpis || [];
             const kpi = kpis[index];
 
             if (!kpi) {
