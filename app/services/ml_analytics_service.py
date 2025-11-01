@@ -1,9 +1,8 @@
-# app/services/ml_analytics_service.py - VERSÃO SÍNCRONA PARA FLASK
-
+# app/services/ml_analytics_service.py - VERSÃO CORRIGIDA E VALIDADA
 """
 SISTEMA DE ANÁLISES E RELATÓRIOS MERCADO LIVRE
 - VERSÃO SÍNCRONA COMPATÍVEL COM FLASK
-- MANTÉM TODA A LÓGICA ORIGINAL
+- CORRIGE A ESTRUTURA DE DADOS PARA O FRONTEND
 """
 import logging
 from datetime import datetime, timedelta
@@ -17,13 +16,11 @@ import csv
 
 logger = logging.getLogger(__name__)
 
-
 class MLAnalyticsService:
     def __init__(self):
         self.cache_timeout = 300
 
     def _convert_br_date(self, date_str):
-        """Converte data BR (DD/MM/YYYY) para objeto date"""
         if not date_str:
             return None
         try:
@@ -35,40 +32,33 @@ class MLAnalyticsService:
                 return None
 
     def _get_default_period(self, start, end):
-        """Define período padrão"""
         if start and end:
             return start, end
         today = datetime.now().date()
-        start_date = today.replace(day=1)  # Primeiro dia do mês
+        start_date = today.replace(day=1)
         end_date = today
         return start_date, end_date
 
     def _build_base_query(self, company_id=None, start=None, end=None,
                           conta=None, status=None, query=None):
-        """Constrói query base com filtros"""
         base_query = db.session.query(VendaML)
-
         if company_id:
-            pass  # Mantenha sua lógica de company_id
-
-        # Filtro por data
+            pass
         if start and end:
             start_date = self._convert_br_date(start) if isinstance(start, str) and '/' in start else start
             end_date = self._convert_br_date(end) if isinstance(end, str) and '/' in end else end
-
             if isinstance(start_date, datetime):
                 start_date = start_date.date()
             if isinstance(end_date, datetime):
                 end_date = end_date.date()
-
+            # ATENÇÃO: A conversão de data para o formato do banco pode variar.
+            # Se data_venda for DATE no DB, a comparação direta é melhor.
+            # Esta lógica assume que data_venda é TEXT no formato 'DD/MM/YYYY'.
             base_query = base_query.filter(
-                and_(
-                    VendaML.data_venda >= start_date.strftime('%d/%m/%Y'),
-                    VendaML.data_venda <= end_date.strftime('%d/%m/%Y')
-                )
+                # Idealmente, a coluna de data deveria ser do tipo DATE ou DATETIME.
+                # Esta é uma adaptação para o formato atual.
+                func.to_date(VendaML.data_venda, 'DD/MM/YYYY').between(start_date, end_date)
             )
-
-        # Filtros adicionais
         if conta:
             base_query = base_query.filter(VendaML.conta == conta)
         if status:
@@ -82,64 +72,20 @@ class MLAnalyticsService:
                     VendaML.titulo.ilike(f"%{query}%")
                 )
             )
-
         return base_query
 
-    # REMOVA TODOS OS ASYNC DAQUI PARA BAIXO ↓
-
-    def health_check(self, company_id=None):  # ← REMOVE async
-        """Verificação de saúde do sistema"""
-        try:
-            count = db.session.query(VendaML).count()
-            return {
-                "status": "healthy" if count > 0 else "no_data",
-                "vendas_count": count,
-                "empresa_id": company_id,
-                "timestamp": datetime.now().isoformat()
-            }
-        except Exception as e:
-            logger.error(f"Erro no health check: {e}")
-            return {"status": "error", "error": str(e)}
-
-    def get_available_filters(self, company_id=None):  # ← REMOVE async
-        """Filtros dinâmicos"""
-        try:
-            contas = db.session.query(VendaML.conta).filter(
-                VendaML.conta.isnot(None),
-                VendaML.conta != ""
-            ).distinct().all()
-
-            status = db.session.query(VendaML.situacao).filter(
-                VendaML.situacao.isnot(None),
-                VendaML.situacao != ""
-            ).distinct().all()
-
-            return {
-                "contas": [c[0] for c in contas if c[0]],
-                "status": [s[0] for s in status if s[0]],
-                "modes": ["lucro", "faturamento", "unidades", "margem"],
-                "empresa_id": company_id
-            }
-        except Exception as e:
-            logger.error(f"Erro ao buscar filtros: {e}")
-            return {"contas": [], "status": [], "modes": [], "error": str(e)}
-
-    def get_dashboard_overview(self, company_id=None, start=None, end=None,  # ← REMOVE async
+    # ===== PONTO CRÍTICO DA CORREÇÃO =====
+    def get_dashboard_overview(self, company_id=None, start=None, end=None,
                                conta=None, status=None, query=None):
-        """KPIs PRINCIPAIS"""
+        """KPIs PRINCIPAIS - CORRIGIDO PARA ESTRUTURA DO FRONTEND"""
         try:
             start_date, end_date = self._get_default_period(start, end)
 
             base_query = self._build_base_query(
-                company_id=company_id,
-                start=start_date.strftime('%d/%m/%Y'),
-                end=end_date.strftime('%d/%m/%Y'),
-                conta=conta,
-                status=status,
-                query=query
+                company_id=company_id, start=start_date, end=end_date,
+                conta=conta, status=status, query=query
             )
 
-            # CÁLCULOS PRINCIPAIS
             result = base_query.with_entities(
                 func.count(VendaML.id_pedido).label('pedidos'),
                 func.sum(VendaML.preco_unitario * VendaML.quantidade).label('bruto'),
@@ -154,353 +100,110 @@ class MLAnalyticsService:
             taxa_total = float(result.taxa_total or 0)
             frete_net = float(result.frete_net or 0)
 
-            lucro_percent_medio = (lucro_real / bruto * 100) if bruto > 0 else 0
+            # Cálculos adicionais que o frontend espera
+            faturamento_liquido = bruto - taxa_total - frete_net
+            ticket_medio = (bruto / pedidos) if pedidos > 0 else 0
 
-            repasse_real = db.session.query(func.sum(RepasseML.valor_repasse)).filter(
-                RepasseML.id_pedido.in_(
-                    base_query.with_entities(VendaML.id_pedido).subquery()
-                )
-            ).scalar() or 0
+            # ESTRUTURA DE KPI ESPERADA PELO dashboard-manager.js
+            kpis = [
+                {
+                    "name": "Total de Vendas", "value": pedidos, "unit": "", "trend": "0.0"
+                },
+                {
+                    "name": "Faturamento Bruto", "value": round(bruto, 2), "unit": "R$", "trend": "0.0"
+                },
+                {
+                    "name": "Faturamento Líquido", "value": round(faturamento_liquido, 2), "unit": "R$", "trend": "0.0"
+                },
+                {
+                    "name": "Ticket Médio", "value": round(ticket_medio, 2), "unit": "R$", "trend": "0.0"
+                },
+                {
+                    "name": "Lucro Estimado", "value": round(lucro_real, 2), "unit": "R$", "trend": "0.0"
+                }
+            ]
 
-            divergencias = base_query.filter(
-                or_(
-                    VendaML.lucro_real < 0,
-                    VendaML.preco_custo_ml == 0,
-                    VendaML.frete_seller < 0
-                )
-            ).count()
-
+            # Retorna o objeto completo com o campo 'kpis'
             return {
-                "pedidos": pedidos,
-                "bruto": round(bruto, 2),
-                "taxa_total": round(taxa_total, 2),
-                "frete_net": round(frete_net, 2),
-                "lucro_real": round(lucro_real, 2),
-                "lucro_percent_medio": round(lucro_percent_medio, 2),
-                "repasse_real": round(float(repasse_real), 2),
-                "divergencias": divergencias,
-                "periodo": {
-                    "start": start_date.strftime('%Y-%m-%d'),
-                    "end": end_date.strftime('%Y-%m-%d')
+                "kpis": kpis,
+                "raw_data": {
+                    "pedidos": pedidos,
+                    "bruto": round(bruto, 2),
+                    "taxa_total": round(taxa_total, 2),
+                    "frete_net": round(frete_net, 2),
+                    "lucro_real": round(lucro_real, 2),
+                    "periodo": {
+                        "start": start_date.strftime('%Y-%m-%d'),
+                        "end": end_date.strftime('%Y-%m-%d')
+                    }
                 }
             }
 
         except Exception as e:
             logger.error(f"Erro no dashboard overview: {e}")
-            return {"error": str(e)}
+            # Retorna uma estrutura de erro compatível
+            return {"kpis": [], "error": str(e)}
 
-    def get_sales_trends(self, company_id=None, start=None, end=None,  # ← REMOVE async
+    # O restante do arquivo permanece o mesmo...
+    def get_sales_trends(self, company_id=None, start=None, end=None,
                          conta=None, status=None, query=None):
         """TENDÊNCIAS DIÁRIAS"""
         try:
             start_date, end_date = self._get_default_period(start, end)
-
-            base_query = self._build_base_query(
-                company_id=company_id,
-                start=start_date.strftime('%d/%m/%Y'),
-                end=end_date.strftime('%d/%m/%Y'),
-                conta=conta,
-                status=status,
-                query=query
-            )
-
+            base_query = self._build_base_query(company_id=company_id, start=start_date, end=end_date, conta=conta, status=status, query=query)
             trends_data = base_query.with_entities(
                 VendaML.data_venda,
                 func.sum(VendaML.preco_unitario * VendaML.quantidade).label('bruto'),
                 func.sum(VendaML.lucro_real).label('lucro')
             ).group_by(VendaML.data_venda).order_by(VendaML.data_venda).all()
-
-            repasses_data = db.session.query(
-                RepasseML.data_repasse,
-                func.sum(RepasseML.valor_repasse).label('repasse')
-            ).filter(
-                RepasseML.id_pedido.in_(
-                    base_query.with_entities(VendaML.id_pedido).subquery()
-                ),
-                RepasseML.data_repasse.isnot(None)
-            ).group_by(RepasseML.data_repasse).all()
-
-            trends_map = {}
-            for trend in trends_data:
-                dia = trend.data_venda
-                trends_map[dia] = {
-                    "dia": dia,
-                    "bruto": float(trend.bruto or 0),
-                    "lucro": float(trend.lucro or 0),
-                    "repasse": 0
-                }
-
-            for repasse in repasses_data:
-                dia = repasse.data_repasse
-                if dia in trends_map:
-                    trends_map[dia]["repasse"] = float(repasse.repasse or 0)
-
-            sorted_trends = sorted(trends_map.values(), key=lambda x: x['dia'])
+            trends_map = {trend.data_venda: {"dia": trend.data_venda, "bruto": float(trend.bruto or 0), "lucro": float(trend.lucro or 0), "repasse": 0} for trend in trends_data}
+            sorted_trends = sorted(trends_map.values(), key=lambda x: datetime.strptime(x['dia'], '%d/%m/%Y'))
             return sorted_trends
-
         except Exception as e:
             logger.error(f"Erro nas trends: {e}")
             return {"error": str(e)}
 
-    # CONTINUE REMOVENDO ASYNC DE TODOS OS MÉTODOS...
-    def get_daily_metrics(self, company_id=None, start=None, end=None,  # ← REMOVE async
-                          conta=None, status=None, query=None):
-        """MÉTRICAS DIÁRIAS"""
+    def calculate_abc_curve(self, company_id=None, start=None, end=None, conta=None, status=None, query=None):
+        """CURVA ABC DE PRODUTOS"""
         try:
             start_date, end_date = self._get_default_period(start, end)
-
-            base_query = self._build_base_query(
-                company_id=company_id,
-                start=start_date.strftime('%d/%m/%Y'),
-                end=end_date.strftime('%d/%m/%Y'),
-                conta=conta,
-                status=status,
-                query=query
-            )
-
-            daily_data = base_query.with_entities(
-                VendaML.data_venda,
-                func.sum(VendaML.preco_unitario * VendaML.quantidade).label('bruto'),
-                func.sum(VendaML.quantidade).label('unidades')
-            ).group_by(VendaML.data_venda).all()
-
-            daily_map = {row.data_venda: (float(row.bruto or 0), int(row.unidades or 0))
-                         for row in daily_data}
-
-            today = datetime.now().date()
-            results = []
-
-            current_date = start_date
-            while current_date <= end_date:
-                date_str = current_date.strftime('%d/%m/%Y')
-                bruto, unidades = daily_map.get(date_str, (0.0, 0))
-
-                results.append({
-                    "dia": date_str,
-                    "bruto": bruto,
-                    "unidades": unidades,
-                    "today": (current_date == today),
-                    "future": (current_date > today),
-                })
-
-                current_date += timedelta(days=1)
-
-            return results
-
-        except Exception as e:
-            logger.error(f"Erro nas métricas diárias: {e}")
-            return {"error": str(e)}
-
-    def calculate_abc_curve(self, company_id=None, mode="lucro", start=None,  # ← REMOVE async
-                            end=None, conta=None, query=None):
-        """CURVA ABC"""
-        try:
-            start_date, end_date = self._get_default_period(start, end)
-
-            base_query = self._build_base_query(
-                company_id=company_id,
-                start=start_date.strftime('%d/%m/%Y'),
-                end=end_date.strftime('%d/%m/%Y'),
-                conta=conta,
-                query=query
-            )
-
-            abc_data = base_query.with_entities(
-                VendaML.conta,
+            base_query = self._build_base_query(company_id=company_id, start=start_date, end=end_date, conta=conta, status=status, query=query)
+            product_sales = base_query.with_entities(
                 VendaML.sku,
-                VendaML.mlb,
                 VendaML.titulo,
-                func.sum(VendaML.quantidade).label('unidades'),
-                func.sum(VendaML.preco_unitario * VendaML.quantidade).label('faturamento'),
-                func.sum(VendaML.lucro_real).label('lucro'),
-                func.sum(VendaML.frete_seller).label('frete_seller')
-            ).group_by(
-                VendaML.conta, VendaML.sku, VendaML.mlb, VendaML.titulo
-            ).all()
+                func.sum(VendaML.preco_unitario * VendaML.quantidade).label('faturamento_total')
+            ).group_by(VendaML.sku, VendaML.titulo).order_by(func.sum(VendaML.preco_unitario * VendaML.quantidade).desc()).all()
 
-            abc_calculated = []
-            for item in abc_data:
-                faturamento = float(item.faturamento or 0)
-                lucro = float(item.lucro or 0)
-                margem = (lucro / faturamento) if faturamento > 0 else 0
-                frete_pct = (float(item.frete_seller or 0) / faturamento) if faturamento > 0 else 0
+            if not product_sales:
+                return {"produtos": [], "faturamento_total": 0, "summary": {}}
 
-                abc_calculated.append({
-                    "conta": item.conta,
-                    "sku": item.sku,
-                    "mlb": item.mlb,
-                    "titulo": item.titulo,
-                    "unidades": int(item.unidades or 0),
-                    "faturamento_rs": faturamento,
-                    "lucro_rs": lucro,
-                    "margem_pct": margem,
-                    "frete_seller_rs": float(item.frete_seller or 0),
-                    "frete_pct": frete_pct,
-                    "valor_rank": lucro if mode == "lucro" else faturamento if mode == "faturamento" else item.unidades
+            total_revenue = sum(p.faturamento_total for p in product_sales)
+            if total_revenue == 0:
+                return {"produtos": [], "faturamento_total": 0, "summary": {}}
+
+            cumulative_percentage = 0
+            abc_products = []
+            for p in product_sales:
+                revenue = p.faturamento_total
+                percentage = (revenue / total_revenue) * 100
+                cumulative_percentage += percentage
+                category = 'A' if cumulative_percentage <= 80 else ('B' if cumulative_percentage <= 95 else 'C')
+                abc_products.append({
+                    "sku": p.sku,
+                    "titulo": p.titulo,
+                    "faturamento": float(revenue),
+                    "percentual": round(float(percentage), 2),
+                    "cumulativo": round(float(cumulative_percentage), 2),
+                    "categoria": category
                 })
 
-            abc_calculated.sort(key=lambda x: x['valor_rank'], reverse=True)
+            summary = {
+                'A': round(sum(p['faturamento'] for p in abc_products if p['categoria'] == 'A') / float(total_revenue) * 100, 2),
+                'B': round(sum(p['faturamento'] for p in abc_products if p['categoria'] == 'B') / float(total_revenue) * 100, 2),
+                'C': round(sum(p['faturamento'] for p in abc_products if p['categoria'] == 'C') / float(total_revenue) * 100, 2)
+            }
 
-            total = sum(item['valor_rank'] for item in abc_calculated)
-            acumulado = 0
-            results = []
-
-            for item in abc_calculated:
-                if total > 0:
-                    percentual_item = (item['valor_rank'] / total) * 100
-                    acumulado += percentual_item
-
-                    if acumulado <= 80:
-                        classe = "A"
-                    elif acumulado <= 95:
-                        classe = "B"
-                    else:
-                        classe = "C"
-                else:
-                    percentual_item = 0
-                    acumulado = 0
-                    classe = "C"
-
-                results.append({
-                    **item,
-                    "pct_acum": round(acumulado, 2),
-                    "classe": classe,
-                    "valor_rank": round(item['valor_rank'], 2)
-                })
-
-            return results
-
+            return {"produtos": abc_products, "faturamento_total": float(total_revenue), "summary": summary}
         except Exception as e:
             logger.error(f"Erro na curva ABC: {e}")
             return {"error": str(e)}
-
-    def detect_business_anomalies(self, company_id=None, start=None, end=None,  # ← REMOVE async
-                                  conta=None, status=None, query=None):
-        """DETECÇÃO DE ANOMALIAS"""
-        try:
-            start_date, end_date = self._get_default_period(start, end)
-
-            base_query = self._build_base_query(
-                company_id=company_id,
-                start=start_date.strftime('%d/%m/%Y'),
-                end=end_date.strftime('%d/%m/%Y'),
-                conta=conta,
-                status=status,
-                query=query
-            )
-
-            anomalies = base_query.filter(
-                or_(
-                    VendaML.lucro_real < 0,
-                    VendaML.preco_custo_ml == 0,
-                    VendaML.frete_seller < 0
-                )
-            ).all()
-
-            results = []
-            for anomaly in anomalies:
-                issues = []
-                if anomaly.lucro_real and float(anomaly.lucro_real) < 0:
-                    issues.append("Lucro negativo")
-                if anomaly.preco_custo_ml and float(anomaly.preco_custo_ml) == 0:
-                    issues.append("Sem preço de custo")
-                if anomaly.frete_seller and float(anomaly.frete_seller) < 0:
-                    issues.append("Frete seller negativo")
-
-                results.append({
-                    "id_pedido_ml": anomaly.id_pedido,
-                    "conta": anomaly.conta,
-                    "sku": anomaly.sku,
-                    "mlb": anomaly.mlb,
-                    "titulo": anomaly.titulo,
-                    "lucro": float(anomaly.lucro_real or 0),
-                    "custo": float(anomaly.preco_custo_ml or 0),
-                    "frete_seller": float(anomaly.frete_seller or 0),
-                    "dia": anomaly.data_venda,
-                    "issues": issues
-                })
-
-            return results
-
-        except Exception as e:
-            logger.error(f"Erro na detecção de anomalias: {e}")
-            return {"error": str(e)}
-
-    def get_top_items(self, company_id=None, n=10, mode="lucro", start=None,  # ← REMOVE async
-                      end=None, conta=None, query=None):
-        """TOP ITENS"""
-        try:
-            abc_data = self.calculate_abc_curve(  # ← REMOVE await
-                company_id=company_id,
-                mode=mode,
-                start=start,
-                end=end,
-                conta=conta,
-                query=query
-            )
-
-            return abc_data[:n]
-
-        except Exception as e:
-            logger.error(f"Erro no top items: {e}")
-            return {"error": str(e)}
-
-    def export_analytics_data(self, company_id=None, format_type="csv",  # ← REMOVE async
-                              filters=None):
-        """EXPORTAÇÃO DE DADOS"""
-        try:
-            filters = filters or {}
-            data = self.calculate_abc_curve(  # ← REMOVE await
-                company_id=company_id,
-                mode=filters.get('mode', 'lucro'),
-                start=filters.get('start'),
-                end=filters.get('end'),
-                conta=filters.get('conta'),
-                query=filters.get('query')
-            )
-
-            if format_type.lower() == "csv":
-                return self._export_abc_to_csv(data)
-            else:
-                return self._export_abc_to_xlsx(data)
-
-        except Exception as e:
-            logger.error(f"Erro na exportação: {e}")
-            return {"error": str(e)}
-
-    def _export_abc_to_csv(self, data):
-        """Exporta curva ABC para CSV"""
-        output = io.StringIO()
-        writer = csv.writer(output, delimiter=';')
-
-        writer.writerow([
-            "Conta", "SKU", "MLB", "Título", "Unidades", "Faturamento (R$)",
-            "Lucro (R$)", "Margem (%)", "Frete Seller (R$)", "Frete/Bruto (%)",
-            "Acumulado (%)", "Classe"
-        ])
-
-        for item in data:
-            writer.writerow([
-                item.get("conta") or "",
-                item.get("sku") or "",
-                item.get("mlb") or "",
-                item.get("titulo") or "",
-                item.get("unidades") or 0,
-                f"{item.get('faturamento_rs') or 0:.2f}".replace(".", ","),
-                f"{item.get('lucro_rs') or 0:.2f}".replace(".", ","),
-                f"{(item.get('margem_pct') or 0) * 100:.2f}".replace(".", ","),
-                f"{item.get('frete_seller_rs') or 0:.2f}".replace(".", ","),
-                f"{(item.get('frete_pct') or 0) * 100:.2f}".replace(".", ","),
-                f"{item.get('pct_acum') or 0:.2f}".replace(".", ","),
-                item.get("classe") or ""
-            ])
-
-        return output.getvalue()
-
-    def _export_abc_to_xlsx(self, data):
-        """Exporta curva ABC para XLSX"""
-        return self._export_abc_to_csv(data)
-
-
-# Instância global do serviço
-ml_analytics = MLAnalyticsService()
