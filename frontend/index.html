@@ -1,223 +1,90 @@
-<!DOCTYPE html>
-<html lang="pt-BR" data-theme="light">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FISGARONE AI • Dashboard Inteligente</title>
+{% extends "base.html" %}
 
-    <!-- Design System Premium -->
-<link rel="stylesheet" href="{{ url_for('static', filename='css/foundation/colors.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/foundation/typography.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/ai-cards.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/ai-buttons.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/filters.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/components/charts.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/layouts/main-layout.css') }}">
+{% block title %}Dashboard Executivo • FISGARONE ERP{% endblock %}
 
+{% block page_title %}Dashboard Executivo{% endblock %}
 
-    <!-- Fontes Premium -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+{% block content %}
+    <!-- LINHA 1: MÉTRICAS EM TEMPO REAL -->
+    <section class="ai-section">
+        <div class="section-header">
+            <div class="header-content">
+                <h2 class="section-title">📊 Métricas em Tempo Real</h2>
+                <p class="section-subtitle">Dados atualizados automaticamente</p>
+            </div>
+            <div class="header-actions">
+                 <button class="ai-btn ai-btn-secondary" onclick="dashboard.exportData()">
+                    📥 Exportar
+                </button>
+                <button class="ai-btn ai-btn-primary btn-with-icon" onclick="dashboard.refreshData()">
+                    <span>🔄</span>
+                    Atualizar Dados
+                </button>
+            </div>
+        </div>
+        <div class="metrics-top-grid" id="kpi-container"></div>
+    </section>
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- LINHA 2: FILTROS AVANÇADOS -->
+    <section class="ai-section">
+        <div class="section-header">
+            <h2 class="section-title">🎛️ Filtros Avançados</h2>
+        </div>
+        <div id="filters-container"></div>
+    </section>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
-</head>
-<body>
-    <div class="ai-app">
-        <!-- Hero Section -->
-        <header class="ai-hero">
-            <div class="hero-content">
-                <h1 class="ai-hero-title">FISGARONE AI</h1>
-                <p class="hero-subtitle">Sistema de Gestão Inteligente com Automação Avançada</p>
+    <!-- ... (O restante das suas seções de conteúdo permanece exatamente igual) ... -->
 
-                <div class="hero-actions">
-                    <button class="ai-btn ai-btn-primary btn-with-icon" onclick="dashboard.refreshData()">
-                        <span>🔄</span>
-                        Atualizar Dados
-                    </button>
+    <section class="ai-section">
+        <div class="insights-analytics-grid">
+            <div>
+                <h2 class="section-title">🤖 Insights Inteligentes</h2>
+                <div id="insights-container"></div>
+            </div>
+            <div>
+                <h2 class="section-title">📈 Analytics Avançados</h2>
+                <div id="analytics-container"></div>
+            </div>
+        </div>
+    </section>
 
-                    <div class="theme-toggle-container">
-                        <span style="color: var(--ai-text-muted);">🌙</span>
-                        <button class="theme-toggle" onclick="dashboard.toggleTheme()"
-                                aria-label="Alternar tema claro/escuro"
-                                title="Clique para alternar o tema">
-                        </button>
-                        <span style="color: var(--ai-text-muted);">☀️</span>
-                    </div>
-                </div>
-        </header>
+    <section class="ai-section">
+        <h2 class="section-title">📊 Visualizações Gráficas</h2>
+        <div class="visualizations-full" id="charts-container"></div>
+    </section>
 
-        <!-- Main Content -->
-        <main class="ai-container">
+    <section class="ai-section">
+        <div class="products-distribution-grid">
+            <div>
+                <h2 class="section-title">🏆 Top Produtos - Análise ABC</h2>
+                <div id="abc-container"></div>
+            </div>
+            <div>
+                <h2 class="section-title">📊 Distribuição por Classificação</h2>
+                <div id="distribution-container"></div>
+            </div>
+        </div>
+    </section>
 
-            <!-- LINHA 1: MÉTRICAS EM TEMPO REAL (5 CARDS TOPO) -->
-            <section class="ai-section">
-                <div class="section-header">
-                    <div class="header-content">
-                        <h2 class="section-title">📊 Métricas em Tempo Real</h2>
-                        <p class="section-subtitle">Dados atualizados automaticamente</p>
-                    </div>
-                    <div class="header-actions">
-                        <button class="ai-btn ai-btn-secondary" onclick="dashboard.exportData()">
-                            📥 Exportar
-                        </button>
-                        <button class="ai-btn ai-btn-primary" onclick="dashboard.refreshData()">
-                            🔄 Atualizar
-                        </button>
-                        <div class="theme-toggle-container">
-                            <span style="color: var(--ai-text-muted);">🌙</span>
-                            <button class="theme-toggle" onclick="dashboard.toggleTheme()"
-                                    aria-label="Alternar tema claro/escuro"
-                                    title="Clique para alternar o tema">
-                            </button>
-                            <span style="color: var(--ai-text-muted);">☀️</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="metrics-top-grid" id="kpi-container">
-                    <!-- 5 cards em linha única -->
-                </div>
-            </section>
+    <section class="ai-section">
+        <h2 class="section-title">📈 Métricas Estratégicas</h2>
+        <div class="metrics-top-grid" id="strategic-container"></div>
+    </section>
 
-            <!-- LINHA 2: FILTROS AVANÇADOS -->
-            <section class="ai-section">
-                <div class="section-header">
-                    <div class="header-content">
-                        <h2 class="section-title">🎛️ Filtros Avançados</h2>
-                        <p class="section-subtitle">Filtre os dados por período, status e categoria</p>
-                    </div>
-                </div>
-                <div id="filters-container">
-                    <!-- Filtros serão renderizados aqui -->
-                </div>
-            </section>
+    <button class="floating-action" onclick="dashboard.scrollToTop()" title="Voltar ao topo">↑</button>
+{% endblock %}
 
-            <!-- LINHA 3: INSIGHTS + ANALYTICS EM LINHA ÚNICA -->
-            <section class="ai-section">
-                <div class="insights-analytics-grid">
-
-                    <!-- COLUNA 1: INSIGHTS INTELIGENTES -->
-                    <div>
-                        <div class="section-header">
-                            <div class="header-content">
-                                <h2 class="section-title">🤖 Insights Inteligentes</h2>
-                                <p class="section-subtitle">Análise preditiva e recomendações IA</p>
-                            </div>
-                        </div>
-                        <div id="insights-container">
-                            <!-- Insights da IA -->
-                        </div>
-                    </div>
-
-                    <!-- COLUNA 2: ANALYTICS AVANÇADOS -->
-                    <div>
-                        <div class="section-header">
-                            <div class="header-content">
-                                <h2 class="section-title">📈 Analytics Avançados</h2>
-                                <p class="section-subtitle">Dados detalhados e tendências</p>
-                            </div>
-                        </div>
-                        <div id="analytics-container">
-                            <!-- Analytics -->
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- LINHA 4: VISUALIZAÇÕES GRÁFICAS (DIÁRIAS) -->
-            <section class="ai-section">
-                <div class="section-header">
-                    <div class="header-content">
-                        <h2 class="section-title">📊 Visualizações Gráficas</h2>
-                        <p class="section-subtitle">Análises visuais em tempo real</p>
-                    </div>
-                    <div class="header-actions">
-                        <button class="ai-btn ai-btn-secondary" onclick="chartsSystem.updateAllCharts()">
-                            🔄 Atualizar Gráficos
-                        </button>
-                    </div>
-                </div>
-                <div class="visualizations-full" id="charts-container">
-                    <!-- Gráficos serão renderizados aqui -->
-                </div>
-            </section>
-
-            <!-- LINHA 5: TOP PRODUTOS + DISTRIBUIÇÃO EM LINHA ÚNICA -->
-            <section class="ai-section">
-                <div class="products-distribution-grid">
-
-                    <!-- COLUNA 1: TOP PRODUTOS - ANÁLISE ABC -->
-                    <div>
-                        <div class="section-header">
-                            <div class="header-content">
-                                <h2 class="section-title">🏆 Top Produtos - Análise ABC</h2>
-                                <p class="section-subtitle">Classificação por faturamento</p>
-                            </div>
-                        </div>
-                        <div id="abc-container">
-                            <!-- Gráfico ABC será renderizado aqui -->
-                        </div>
-                    </div>
-
-                    <!-- COLUNA 2: DISTRIBUIÇÃO POR CLASSIFICAÇÃO -->
-                    <div>
-                        <div class="section-header">
-                            <div class="header-content">
-                                <h2 class="section-title">📊 Distribuição por Classificação</h2>
-                                <p class="section-subtitle">Proporção entre categorias A, B e C</p>
-                            </div>
-                        </div>
-                        <div id="distribution-container">
-                            <!-- Gráfico de distribuição será renderizado aqui -->
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- LINHA 6: MÉTRICAS ESTRATÉGICAS -->
-            <section class="ai-section">
-                <div class="section-header">
-                    <div class="header-content">
-                        <h2 class="section-title">📈 Métricas Estratégicas</h2>
-                        <p class="section-subtitle">Indicadores críticos para tomada de decisão</p>
-                    </div>
-                </div>
-                <div class="metrics-top-grid" id="strategic-container">
-                    <!-- KPIs estratégicos serão renderizados aqui -->
-                </div>
-            </section>
-
-        </main>
-
-        <!-- Botão Flutuante -->
-        <button class="floating-action" onclick="dashboard.scrollToTop()" title="Voltar ao topo">
-            ↑
-        </button>
-    </div>
-
-    <!-- Modal Container -->
-    <div id="modal-container"></div>
-
-    <!-- Scripts Premium - ORDEM CORRIGIDA -->
-<script src="{{ url_for('static', filename='js/core/ai-engine.js') }}"></script>
-<script src="{{ url_for('static', filename='js/services/api-integration.js') }}"></script>
-<script src="{{ url_for('static', filename='js/components/modal-system.js') }}"></script>
-<script src="{{ url_for('static', filename='js/components/filters-system.js') }}"></script>
-<script src="{{ url_for('static', filename='js/components/charts-system.js') }}"></script>
-<script src="{{ url_for('static', filename='js/components/dashboard-manager.js') }}"></script>
-
-
-    <!-- Inicialização -->
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/core/ai-engine.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/services/api-integration.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/components/modal-system.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/components/filters-system.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/components/charts-system.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/components/dashboard-manager.js') }}" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🚀 Inicializando FISGARONE AI Premium...');
             window.dashboard = new DashboardManager();
             await dashboard.initialize();
         });
     </script>
-</body>
-</html>
+{% endblock %}
