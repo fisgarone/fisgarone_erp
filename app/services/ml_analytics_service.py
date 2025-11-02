@@ -159,7 +159,8 @@ class MLAnalyticsService:
                     "name": "Ticket Médio", "value": round(ticket_medio, 2), "unit": "R$", "trend": "0.0"
                 },
                 {
-                    "name": "Lucro Estimado", "value": round(lucro_real, 2), "unit": "R$", "trend": "0.0"
+                    "name": "Lucro Estimado", "value": round(faturamento_liquido, 2),
+
                 }
             ]
 
