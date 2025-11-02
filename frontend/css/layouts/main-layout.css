@@ -1,5 +1,5 @@
 /* =================================================================
-   FISGARONE ERP - DESIGN SYSTEM E LAYOUT UNIFICADO V5.0 (FINAL)
+   FISGARONE ERP - DESIGN SYSTEM E LAYOUT UNIFICADO V7.0 (FINAL)
    ================================================================= */
 
 /* =================================================================
@@ -164,10 +164,6 @@ h1, h2, h3, h4, h5, h6 {
 
 /* --- Grids de Conteúdo --- */
 .metrics-top-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; }
-.insights-analytics-grid, .products-distribution-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
-@media (max-width: 1024px) {
-    .insights-analytics-grid, .products-distribution-grid { grid-template-columns: 1fr; }
-}
 
 /* --- Cards --- */
 .ai-card {
@@ -223,4 +219,97 @@ h1, h2, h3, h4, h5, h6 {
 .ai-btn-secondary:hover {
   background: var(--ai-card-bg-secondary);
   border-color: var(--accent-primary);
+}
+
+/* =================================================================
+   5. CORREÇÕES CIRÚRGICAS (GRÁFICOS, FILTROS, INSIGHTS)
+   ================================================================= */
+
+/* --- CORREÇÃO: Gráficos --- */
+.visualizations-full, .products-distribution-grid {
+    display: grid;
+    gap: 2rem;
+}
+#charts-container, #abc-container, #distribution-container {
+    display: block;
+    width: 100%;
+    min-height: 350px;
+    background: var(--ai-card-bg-primary);
+    padding: 1.5rem;
+    border-radius: var(--ai-radius-xl);
+    border: 1px solid var(--ai-card-border);
+}
+.products-distribution-grid {
+    grid-template-columns: 2fr 1fr;
+}
+@media (max-width: 1024px) {
+    .products-distribution-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --- CORREÇÃO: Filtros Avançados (Layout Profissional) --- */
+#filters-container {
+    display: grid; /* MUDANÇA 1: Usar Grid para controle preciso */
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* MUDANÇA 2: Colunas responsivas */
+    align-items: flex-end;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: var(--ai-card-bg-primary);
+    border-radius: var(--ai-radius-xl);
+    border: 1px solid var(--ai-card-border);
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.filter-group select {
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--ai-radius-md);
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.filter-group select:hover {
+    border-color: var(--accent-primary);
+}
+
+.filters-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    grid-column: -1; /* MUDANÇA 3: Empurra para o final da linha */
+    justify-self: end; /* Alinha na direita */
+}
+
+.filters-status-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+/* --- CORREÇÃO: Insights Inteligentes (Layout Horizontal) --- */
+.insights-analytics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Garante duas colunas */
+    gap: 2rem;
+}
+#insights-container {
+    display: flex; /* MUDANÇA 4: Usar Flexbox para os cards de insight */
+    flex-direction: column; /* Empilha os cards verticalmente dentro da coluna */
+    gap: 1rem;
 }
