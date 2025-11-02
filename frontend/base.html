@@ -5,10 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}FISGARONE ERP{% endblock %}</title>
 
-    <!-- Design System e Layouts -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/layouts/main-layout.css') }}">
+    <!-- CSS Foundation (Cores, Tipografia) -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/foundation/colors.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/foundation/typography.css') }}">
+
+    <!-- CSS de Layout em Camadas -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layouts/shell-layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layouts/content-layout.css') }}">
+
+    <!-- CSS de Componentes -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/ai-cards.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/ai-buttons.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/filters.css') }}">
@@ -86,8 +91,10 @@
             </div>
         </header>
 
-        <main class="main-content">
-            {% block content %}{% endblock %}
+        <main class="main-wrapper">
+            <div class="main-content">
+                {% block content %}{% endblock %}
+            </div>
         </main>
     </div>
 
