@@ -4,40 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}FISGARONE ERP{% endblock %}</title>
-
-    <!-- ================================================== -->
-    <!--            *** INÍCIO DA CORREÇÃO ***              -->
-    <!-- ================================================== -->
-
-    <!-- CORREÇÃO 1: Adicionando o Chart.js que foi esquecido -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- CSS Foundation (Cores, Tipografia ) -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/foundation/colors.css') }}">
+    <!-- CORREÇÃO: Carregando o sistema de estilo UNIFICADO -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/foundation/colors.css' ) }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/foundation/typography.css') }}">
-
-    <!-- CSS de Layout em Camadas -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/layouts/shell-layout.css') }}">
-
-    <!-- CORREÇÃO 2: Referenciando o nome correto do arquivo de layout de conteúdo -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/layouts/content-layout.css') }}">
-
-    <!-- CSS de Componentes -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layouts/main-layout.css') }}"> <!-- ÚNICO ARQUIVO DE LAYOUT -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/ai-cards.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/ai-buttons.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/filters.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/charts.css') }}">
 
-    <!-- ================================================== -->
-    <!--             *** FIM DA CORREÇÃO ***                -->
-    <!-- ================================================== -->
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="https://i.imgur.com/2Y45d5G.png" type="image/png">
-
     {% block styles %}{% endblock %}
 </head>
 <body>
+    <!-- O resto do base.html permanece o mesmo -->
     <div class="app-shell" id="app-shell">
         <aside class="app-sidebar" id="app-sidebar">
             <div class="sidebar-header">
@@ -63,29 +46,6 @@
                         <a href="#" class="nav-item submenu-item"><span class="nav-text">Shopee</span></a>
                     </div>
                 </div>
-                <div class="nav-group">
-                    <div class="nav-item" data-submenu-id="submenu-estoque">
-                        <span class="nav-icon">📦</span>
-                        <span class="nav-text">Estoque</span>
-                        <span class="nav-arrow">›</span>
-                    </div>
-                    <div class="submenu" id="submenu-estoque">
-                        <a href="#" class="nav-item submenu-item"><span class="nav-text">Produtos</span></a>
-                        <a href="#" class="nav-item submenu-item"><span class="nav-text">Movimentações</span></a>
-                    </div>
-                </div>
-                <div class="nav-group">
-                    <div class="nav-group-title">Gestão</div>
-                     <div class="nav-item" data-submenu-id="submenu-financeiro">
-                        <span class="nav-icon">💰</span>
-                        <span class="nav-text">Financeiro</span>
-                        <span class="nav-arrow">›</span>
-                    </div>
-                    <div class="submenu" id="submenu-financeiro">
-                        <a href="#" class="nav-item submenu-item"><span class="nav-text">Contas a Pagar</span></a>
-                        <a href="#" class="nav-item submenu-item"><span class="nav-text">Contas a Receber</span></a>
-                    </div>
-                </div>
             </nav>
             <div class="sidebar-footer">
                 <a href="#" class="nav-item">
@@ -94,7 +54,6 @@
                 </a>
             </div>
         </aside>
-
         <header class="app-header">
             <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
             <div class="header-controls">
@@ -103,20 +62,12 @@
                 <div class="user-avatar">F</div>
             </div>
         </header>
-
         <main class="main-wrapper">
             <div class="main-content">
                 {% block content %}{% endblock %}
             </div>
         </main>
     </div>
-
-    <div class="command-palette-overlay" id="command-palette-overlay">
-        <div class="command-palette">
-            <input type="text" placeholder="Digite um comando ou busque uma tela...">
-        </div>
-    </div>
-
     <script src="{{ url_for('static', filename='js/layout.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>

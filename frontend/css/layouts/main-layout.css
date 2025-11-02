@@ -1,0 +1,142 @@
+/* =================================================================
+   FISGARONE ERP - SISTEMA DE LAYOUT UNIFICADO V3.0
+   ================================================================= */
+
+/* --- RESET E VARIÁVEIS GLOBAIS --- */
+:root {
+    --sidebar-width-collapsed: 80px;
+    --sidebar-width-expanded: 260px;
+    --header-height: 70px;
+    --transition-speed: 0.3s;
+    --transition-curve: cubic-bezier(0.4, 0, 0.2, 1);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-family: 'Inter', sans-serif; }
+body {
+    background-color: var(--ai-bg-main); /* CORREÇÃO: Usa a cor de fundo do conteúdo principal */
+    color: var(--ai-text-primary);
+    overflow: hidden; /* Previne barras de rolagem duplas */
+}
+
+/* --- ESTRUTURA PRINCIPAL (APP SHELL) --- */
+.app-shell {
+    display: grid;
+    grid-template-columns: var(--sidebar-width-collapsed) 1fr;
+    grid-template-rows: var(--header-height) 1fr;
+    grid-template-areas: "sidebar header" "sidebar main";
+    height: 100vh;
+    width: 100vw; /* CORREÇÃO: Garante que o app ocupe toda a largura */
+    transition: grid-template-columns var(--transition-speed) var(--transition-curve);
+}
+.app-shell.sidebar-expanded {
+    grid-template-columns: var(--sidebar-width-expanded) 1fr;
+}
+
+/* --- SIDEBAR (CENTRO DE COMANDO) --- */
+.app-sidebar {
+    grid-area: sidebar;
+    background-color: var(--ai-bg-sidebar);
+    border-right: 1px solid var(--ai-border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 0;
+    transition: all var(--transition-speed) var(--transition-curve);
+    overflow: hidden;
+    z-index: 200;
+}
+/* ... (o resto dos estilos da sidebar permanece o mesmo) ... */
+.sidebar-header { display: flex; align-items: center; justify-content: center; padding: 0 1.5rem; margin-bottom: 2rem; }
+.sidebar-logo { height: 45px; transition: all var(--transition-speed) var(--transition-curve); }
+.app-shell:not(.sidebar-expanded) .sidebar-logo { transform: scale(0.9); }
+.sidebar-nav { flex-grow: 1; overflow-y: auto; overflow-x: hidden; }
+.nav-group-title { font-size: 0.7rem; font-weight: 600; color: var(--ai-text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 1rem 1.5rem 0.5rem; white-space: nowrap; opacity: 0; transition: opacity var(--transition-speed) var(--transition-curve); }
+.app-shell.sidebar-expanded .nav-group-title { opacity: 1; }
+.nav-item { display: flex; align-items: center; height: 50px; padding: 0 1.5rem; color: var(--ai-text-secondary); text-decoration: none; font-weight: 500; white-space: nowrap; cursor: pointer; position: relative; transition: color var(--transition-speed) ease, background-color var(--transition-speed) ease; }
+.nav-item:hover { color: var(--ai-text-primary); background-color: var(--ai-accent-hover-bg); }
+.nav-item.active { color: white; font-weight: 600; background: var(--ai-accent-gradient); }
+.nav-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--ai-accent-primary); border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
+.nav-icon { font-size: 1.5rem; min-width: 50px; text-align: center; margin-left: -1.5rem; transition: margin var(--transition-speed) var(--transition-curve); }
+.app-shell.sidebar-expanded .nav-icon { margin-left: 0; }
+.nav-text { opacity: 0; transform: translateX(-10px); transition: opacity var(--transition-speed) var(--transition-curve), transform var(--transition-speed) var(--transition-curve); }
+.app-shell.sidebar-expanded .nav-text { opacity: 1; transform: translateX(0); }
+.nav-arrow { margin-left: auto; font-size: 1rem; transform: rotate(0deg); transition: transform var(--transition-speed) var(--transition-curve); }
+.nav-item.open > .nav-arrow { transform: rotate(90deg); }
+.submenu { max-height: 0; overflow: hidden; transition: max-height var(--transition-speed) var(--transition-curve); }
+.submenu-item { padding-left: 3.5rem; height: 40px; }
+.app-shell.sidebar-expanded .submenu-item { padding-left: 4.5rem; }
+.sidebar-footer { padding: 1rem 1.5rem 0; border-top: 1px solid var(--ai-border-color); }
+
+/* --- HEADER SUPERIOR --- */
+.app-header {
+    grid-area: header;
+    background-color: var(--ai-bg-header);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--ai-border-color);
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+/* ... (o resto dos estilos do header permanece o mesmo) ... */
+.page-title { font-size: 1.5rem; font-weight: 700; }
+.header-controls { display: flex; align-items: center; gap: 1rem; }
+.icon-button { background: none; border: none; color: var(--ai-text-secondary); font-size: 1.5rem; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s ease, color 0.2s ease; }
+.icon-button:hover { background-color: var(--ai-accent-hover-bg); color: var(--ai-text-primary); }
+.user-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--ai-accent-gradient); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+
+/* --- CONTEÚDO PRINCIPAL (MAIN) --- */
+.main-wrapper {
+    grid-area: main;
+    overflow-y: auto; /* Permite rolagem apenas no conteúdo principal */
+    background: var(--ai-bg-main); /* CORREÇÃO: Garante que a área de conteúdo tenha a cor de fundo correta */
+}
+.main-content {
+    padding: 2rem;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+/* --- ESTILOS DO CONTEÚDO (INTEGRADOS) --- */
+.ai-section {
+    margin-bottom: 2rem;
+}
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+.section-subtitle {
+    font-size: 0.9rem;
+    color: var(--ai-text-secondary);
+}
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+.metrics-top-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+}
+.insights-analytics-grid, .products-distribution-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+@media (max-width: 1024px) {
+    .insights-analytics-grid, .products-distribution-grid {
+        grid-template-columns: 1fr;
+    }
+}
