@@ -658,8 +658,76 @@ class DashboardManager {
 
     downloadReport(format) {
         console.log(`📥 Exportando relatório em ${format}...`);
-        this.showNotification(`Relatório ${format} gerado com sucesso!`, 'success');
-        this.modal.close();
+        
+        try {
+            if (format === 'csv') {
+                this.exportToCSV();
+            } else if (format === 'excel') {
+                this.exportToExcel();
+            } else if (format === 'pdf') {
+                this.exportToPDF();
+            }
+            
+            this.showNotification(`Relatório ${format.toUpperCase()} gerado com sucesso!`, 'success');
+            this.modal.close();
+        } catch (error) {
+            console.error('Erro ao exportar:', error);
+            this.showNotification('Erro ao gerar relatório', 'error');
+        }
+    }
+
+    exportToCSV() {
+        const kpis = this.data.data?.kpis || [];
+        
+        // Cabeçalho CSV
+        let csv = 'Métrica,Valor,Unidade,Tendência\n';
+        
+        // Dados dos KPIs
+        kpis.forEach(kpi => {
+            const value = typeof kpi.value === 'number' ? kpi.value.toFixed(2) : kpi.value;
+            csv += `"${kpi.name}","${value}","${kpi.unit || ''}","${kpi.trend || '0.0%'}"\n`;
+        });
+        
+        // Download
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `dashboard_ml_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    exportToExcel() {
+        const kpis = this.data.data?.kpis || [];
+        
+        // Criar HTML da tabela
+        let html = '<table><thead><tr><th>Métrica</th><th>Valor</th><th>Unidade</th><th>Tendência</th></tr></thead><tbody>';
+        
+        kpis.forEach(kpi => {
+            const value = typeof kpi.value === 'number' ? kpi.value.toFixed(2) : kpi.value;
+            html += `<tr><td>${kpi.name}</td><td>${value}</td><td>${kpi.unit || ''}</td><td>${kpi.trend || '0.0%'}</td></tr>`;
+        });
+        
+        html += '</tbody></table>';
+        
+        // Download como Excel
+        const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `dashboard_ml_${new Date().toISOString().split('T')[0]}.xls`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    exportToPDF() {
+        // Abrir janela de impressão para salvar como PDF
+        window.print();
     }
 
     // ===== UTILITÁRIOS =====
