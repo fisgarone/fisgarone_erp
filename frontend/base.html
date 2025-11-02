@@ -5,12 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}FISGARONE ERP{% endblock %}</title>
 
-    <!-- CSS Foundation (Cores, Tipografia) -->
+    <!-- ================================================== -->
+    <!--            *** INÍCIO DA CORREÇÃO ***              -->
+    <!-- ================================================== -->
+
+    <!-- CORREÇÃO 1: Adicionando o Chart.js que foi esquecido -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- CSS Foundation (Cores, Tipografia ) -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/foundation/colors.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/foundation/typography.css') }}">
 
     <!-- CSS de Layout em Camadas -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layouts/shell-layout.css') }}">
+
+    <!-- CORREÇÃO 2: Referenciando o nome correto do arquivo de layout de conteúdo -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layouts/content-layout.css') }}">
 
     <!-- CSS de Componentes -->
@@ -18,6 +27,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/ai-buttons.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/filters.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components/charts.css') }}">
+
+    <!-- ================================================== -->
+    <!--             *** FIM DA CORREÇÃO ***                -->
+    <!-- ================================================== -->
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="https://i.imgur.com/2Y45d5G.png" type="image/png">
