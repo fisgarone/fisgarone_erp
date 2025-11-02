@@ -4,23 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}FISGARONE ERP{% endblock %}</title>
+
+    <!-- CORREÇÃO 1: Chart.js incluído -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- CORREÇÃO: Carregando o sistema de estilo UNIFICADO -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/foundation/colors.css' ) }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/foundation/typography.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/layouts/main-layout.css') }}"> <!-- ÚNICO ARQUIVO DE LAYOUT -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/ai-cards.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/ai-buttons.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/filters.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/components/charts.css') }}">
+    <!-- CORREÇÃO 2: Carregando o ÚNICO arquivo de CSS unificado -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layouts/main-layout.css' ) }}">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="https://i.imgur.com/2Y45d5G.png" type="image/png">
+
     {% block styles %}{% endblock %}
 </head>
 <body>
-    <!-- O resto do base.html permanece o mesmo -->
     <div class="app-shell" id="app-shell">
         <aside class="app-sidebar" id="app-sidebar">
             <div class="sidebar-header">
@@ -29,6 +25,7 @@
             <nav class="sidebar-nav">
                 <div class="nav-group">
                     <div class="nav-group-title">Análise</div>
+                    <!-- CORREÇÃO 3: Link do Dashboard aponta para a rota correta -->
                     <a href="{{ url_for('main_bp.dashboard' ) }}" class="nav-item active">
                         <span class="nav-icon">📊</span>
                         <span class="nav-text">Dashboard</span>
@@ -44,6 +41,29 @@
                     <div class="submenu" id="submenu-marketplaces">
                         <a href="#" class="nav-item submenu-item"><span class="nav-text">Mercado Livre</span></a>
                         <a href="#" class="nav-item submenu-item"><span class="nav-text">Shopee</span></a>
+                    </div>
+                </div>
+                <div class="nav-group">
+                    <div class="nav-item" data-submenu-id="submenu-estoque">
+                        <span class="nav-icon">📦</span>
+                        <span class="nav-text">Estoque</span>
+                        <span class="nav-arrow">›</span>
+                    </div>
+                    <div class="submenu" id="submenu-estoque">
+                        <a href="#" class="nav-item submenu-item"><span class="nav-text">Produtos</span></a>
+                        <a href="#" class="nav-item submenu-item"><span class="nav-text">Movimentações</span></a>
+                    </div>
+                </div>
+                <div class="nav-group">
+                    <div class="nav-group-title">Gestão</div>
+                     <div class="nav-item" data-submenu-id="submenu-financeiro">
+                        <span class="nav-icon">💰</span>
+                        <span class="nav-text">Financeiro</span>
+                        <span class="nav-arrow">›</span>
+                    </div>
+                    <div class="submenu" id="submenu-financeiro">
+                        <a href="#" class="nav-item submenu-item"><span class="nav-text">Contas a Pagar</span></a>
+                        <a href="#" class="nav-item submenu-item"><span class="nav-text">Contas a Receber</span></a>
                     </div>
                 </div>
             </nav>
@@ -68,6 +88,13 @@
             </div>
         </main>
     </div>
+
+    <div class="command-palette-overlay" id="command-palette-overlay">
+        <div class="command-palette">
+            <input type="text" placeholder="Digite um comando ou busque uma tela...">
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/layout.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>

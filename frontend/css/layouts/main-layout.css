@@ -1,42 +1,99 @@
 /* =================================================================
-   FISGARONE ERP - SISTEMA DE LAYOUT UNIFICADO V3.0
+   FISGARONE ERP - DESIGN SYSTEM E LAYOUT UNIFICADO V5.0 (FINAL)
    ================================================================= */
 
-/* --- RESET E VARIÁVEIS GLOBAIS --- */
+/* =================================================================
+   1. FOUNDATION: CORES E VARIÁVEIS GLOBAIS
+   ================================================================= */
 :root {
-    --sidebar-width-collapsed: 80px;
-    --sidebar-width-expanded: 260px;
-    --header-height: 70px;
-    --transition-speed: 0.3s;
-    --transition-curve: cubic-bezier(0.4, 0, 0.2, 1);
+  /* --- Variáveis de Layout --- */
+  --sidebar-width-collapsed: 80px;
+  --sidebar-width-expanded: 260px;
+  --header-height: 70px;
+  --transition-speed: 0.3s;
+  --transition-curve: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --- Paleta de Cores Base --- */
+  --accent-gradient: linear-gradient(135deg, #4f46e5, #7c3aed);
+  --accent-primary: #4f46e5;
+  --accent-primary-hover: #6366f1;
+  --accent-hover-bg: rgba(124, 58, 237, 0.1);
+
+  /* --- Sombras --- */
+  --ai-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --ai-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --ai-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --ai-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* --- Bordas --- */
+  --ai-radius-md: 8px;
+  --ai-radius-lg: 12px;
+  --ai-radius-xl: 16px;
+
+  /* --- VALORES PADRÃO (MODO CLARO) --- */
+  --bg-shell: #f1f5f9;
+  --bg-sidebar: #ffffff;
+  --bg-main: #f1f5f9;
+  --bg-header: rgba(255, 255, 255, 0.8);
+  --border-color: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --ai-card-bg-primary: #ffffff;
+  --ai-card-bg-secondary: #f8fafc;
+  --ai-card-border: #e2e8f0;
 }
+
+[data-theme="dark"] {
+  --bg-shell: #020617;
+  --bg-sidebar: #0f172a;
+  --bg-main: #020617;
+  --bg-header: rgba(15, 23, 42, 0.8);
+  --border-color: #334155;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  --ai-card-bg-primary: #1e293b;
+  --ai-card-bg-secondary: #334155;
+  --ai-card-border: #475569;
+}
+
+/* =================================================================
+   2. TIPOGRAFIA E RESET
+   ================================================================= */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { font-family: 'Inter', sans-serif; }
 body {
-    background-color: var(--ai-bg-main); /* CORREÇÃO: Usa a cor de fundo do conteúdo principal */
-    color: var(--ai-text-primary);
-    overflow: hidden; /* Previne barras de rolagem duplas */
+    background-color: var(--bg-shell);
+    color: var(--text-primary);
+    overflow: hidden;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-/* --- ESTRUTURA PRINCIPAL (APP SHELL) --- */
+/* =================================================================
+   3. LAYOUT SHELL (O CASCO)
+   ================================================================= */
 .app-shell {
     display: grid;
     grid-template-columns: var(--sidebar-width-collapsed) 1fr;
     grid-template-rows: var(--header-height) 1fr;
     grid-template-areas: "sidebar header" "sidebar main";
     height: 100vh;
-    width: 100vw; /* CORREÇÃO: Garante que o app ocupe toda a largura */
+    width: 100vw;
     transition: grid-template-columns var(--transition-speed) var(--transition-curve);
 }
 .app-shell.sidebar-expanded {
     grid-template-columns: var(--sidebar-width-expanded) 1fr;
 }
-
-/* --- SIDEBAR (CENTRO DE COMANDO) --- */
 .app-sidebar {
     grid-area: sidebar;
-    background-color: var(--ai-bg-sidebar);
-    border-right: 1px solid var(--ai-border-color);
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     padding: 1.5rem 0;
@@ -44,17 +101,16 @@ body {
     overflow: hidden;
     z-index: 200;
 }
-/* ... (o resto dos estilos da sidebar permanece o mesmo) ... */
 .sidebar-header { display: flex; align-items: center; justify-content: center; padding: 0 1.5rem; margin-bottom: 2rem; }
 .sidebar-logo { height: 45px; transition: all var(--transition-speed) var(--transition-curve); }
 .app-shell:not(.sidebar-expanded) .sidebar-logo { transform: scale(0.9); }
 .sidebar-nav { flex-grow: 1; overflow-y: auto; overflow-x: hidden; }
-.nav-group-title { font-size: 0.7rem; font-weight: 600; color: var(--ai-text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 1rem 1.5rem 0.5rem; white-space: nowrap; opacity: 0; transition: opacity var(--transition-speed) var(--transition-curve); }
+.nav-group-title { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 1rem 1.5rem 0.5rem; white-space: nowrap; opacity: 0; transition: opacity var(--transition-speed) var(--transition-curve); }
 .app-shell.sidebar-expanded .nav-group-title { opacity: 1; }
-.nav-item { display: flex; align-items: center; height: 50px; padding: 0 1.5rem; color: var(--ai-text-secondary); text-decoration: none; font-weight: 500; white-space: nowrap; cursor: pointer; position: relative; transition: color var(--transition-speed) ease, background-color var(--transition-speed) ease; }
-.nav-item:hover { color: var(--ai-text-primary); background-color: var(--ai-accent-hover-bg); }
-.nav-item.active { color: white; font-weight: 600; background: var(--ai-accent-gradient); }
-.nav-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--ai-accent-primary); border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
+.nav-item { display: flex; align-items: center; height: 50px; padding: 0 1.5rem; color: var(--text-secondary); text-decoration: none; font-weight: 500; white-space: nowrap; cursor: pointer; position: relative; transition: color var(--transition-speed) ease, background-color var(--transition-speed) ease; }
+.nav-item:hover { color: var(--text-primary); background-color: var(--accent-hover-bg); }
+.nav-item.active { color: white; font-weight: 600; background: var(--accent-gradient); }
+.nav-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent-primary); border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
 .nav-icon { font-size: 1.5rem; min-width: 50px; text-align: center; margin-left: -1.5rem; transition: margin var(--transition-speed) var(--transition-curve); }
 .app-shell.sidebar-expanded .nav-icon { margin-left: 0; }
 .nav-text { opacity: 0; transform: translateX(-10px); transition: opacity var(--transition-speed) var(--transition-curve), transform var(--transition-speed) var(--transition-curve); }
@@ -64,15 +120,13 @@ body {
 .submenu { max-height: 0; overflow: hidden; transition: max-height var(--transition-speed) var(--transition-curve); }
 .submenu-item { padding-left: 3.5rem; height: 40px; }
 .app-shell.sidebar-expanded .submenu-item { padding-left: 4.5rem; }
-.sidebar-footer { padding: 1rem 1.5rem 0; border-top: 1px solid var(--ai-border-color); }
-
-/* --- HEADER SUPERIOR --- */
+.sidebar-footer { padding: 1rem 1.5rem 0; border-top: 1px solid var(--border-color); }
 .app-header {
     grid-area: header;
-    background-color: var(--ai-bg-header);
+    background-color: var(--bg-header);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--ai-border-color);
+    border-bottom: 1px solid var(--border-color);
     padding: 0 2rem;
     display: flex;
     justify-content: space-between;
@@ -81,18 +135,15 @@ body {
     top: 0;
     z-index: 100;
 }
-/* ... (o resto dos estilos do header permanece o mesmo) ... */
 .page-title { font-size: 1.5rem; font-weight: 700; }
 .header-controls { display: flex; align-items: center; gap: 1rem; }
-.icon-button { background: none; border: none; color: var(--ai-text-secondary); font-size: 1.5rem; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s ease, color 0.2s ease; }
-.icon-button:hover { background-color: var(--ai-accent-hover-bg); color: var(--ai-text-primary); }
-.user-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--ai-accent-gradient); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; }
-
-/* --- CONTEÚDO PRINCIPAL (MAIN) --- */
+.icon-button { background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s ease, color 0.2s ease; }
+.icon-button:hover { background-color: var(--accent-hover-bg); color: var(--text-primary); }
+.user-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-gradient); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; }
 .main-wrapper {
     grid-area: main;
-    overflow-y: auto; /* Permite rolagem apenas no conteúdo principal */
-    background: var(--ai-bg-main); /* CORREÇÃO: Garante que a área de conteúdo tenha a cor de fundo correta */
+    overflow-y: auto;
+    background: var(--bg-main);
 }
 .main-content {
     padding: 2rem;
@@ -100,43 +151,76 @@ body {
     margin: 0 auto;
 }
 
-/* --- ESTILOS DO CONTEÚDO (INTEGRADOS) --- */
-.ai-section {
-    margin-bottom: 2rem;
+/* =================================================================
+   4. COMPONENTES DE CONTEÚDO (CARDS, BOTÕES, ETC.)
+   ================================================================= */
+
+/* --- Seções de Conteúdo --- */
+.ai-section { margin-bottom: 2rem; }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+.section-title { font-size: 1.5rem; font-weight: 700; }
+.section-subtitle { font-size: 0.9rem; color: var(--text-secondary); }
+.header-actions { display: flex; gap: 0.75rem; align-items: center; }
+
+/* --- Grids de Conteúdo --- */
+.metrics-top-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; }
+.insights-analytics-grid, .products-distribution-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+@media (max-width: 1024px) {
+    .insights-analytics-grid, .products-distribution-grid { grid-template-columns: 1fr; }
 }
-.section-header {
+
+/* --- Cards --- */
+.ai-card {
+    background: var(--ai-card-bg-primary);
+    border-radius: var(--ai-radius-xl);
+    padding: 1.5rem;
+    box-shadow: var(--ai-shadow-md);
+    border: 1px solid var(--ai-card-border);
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 1rem;
 }
-.section-title {
-    font-size: 1.5rem;
-    font-weight: 700;
+.card-header { display: flex; align-items: center; gap: 1rem; }
+.card-icon { width: 48px; height: 48px; border-radius: var(--ai-radius-lg); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: var(--accent-gradient); box-shadow: var(--ai-shadow-lg); }
+.card-title { flex: 1; }
+.card-label { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); }
+.card-value { font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+.card-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: auto; }
+.card-trend { display: flex; align-items: center; gap: 0.25rem; font-size: 0.875rem; font-weight: 600; padding: 0.25rem 0.5rem; border-radius: var(--ai-radius-md); }
+.trend-up { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+.trend-down { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+.card-meta { font-size: 0.75rem; color: var(--text-muted); }
+
+/* --- Botões --- */
+.ai-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--ai-radius-lg);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
-.section-subtitle {
-    font-size: 0.9rem;
-    color: var(--ai-text-secondary);
+.ai-btn-primary {
+  background: var(--accent-gradient);
+  color: white;
+  box-shadow: var(--ai-shadow-sm);
 }
-.header-actions {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
+.ai-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ai-shadow-md);
 }
-.metrics-top-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.25rem;
+.ai-btn-secondary {
+  background: var(--ai-card-bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--ai-card-border);
 }
-.insights-analytics-grid, .products-distribution-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-}
-@media (max-width: 1024px) {
-    .insights-analytics-grid, .products-distribution-grid {
-        grid-template-columns: 1fr;
-    }
+.ai-btn-secondary:hover {
+  background: var(--ai-card-bg-secondary);
+  border-color: var(--accent-primary);
 }
