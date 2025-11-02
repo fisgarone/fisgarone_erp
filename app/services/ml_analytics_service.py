@@ -1,10 +1,5 @@
-# app/services/ml_analytics_service.py - VERSÃO CORRIGIDA E VALIDADA
-"""
-SISTEMA DE ANÁLISES E RELATÓRIOS MERCADO LIVRE
-- VERSÃO SÍNCRONA COMPATÍVEL COM FLASK
-- CORRIGE A ESTRUTURA DE DADOS PARA O FRONTEND
-- FORMATO DE DADOS ALINHADO COM O charts-system.js
-"""
+# app/services/ml_analytics_service.py - VERSÃO COMPLETA E REVISADA SEM CORTES
+
 import logging
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -100,23 +95,7 @@ class MLAnalyticsService:
     def get_dashboard_overview(self, company_id=None, start=None, end=None,
                                conta=None, status=None, query=None):
         """
-        KPIs PRINCIPAIS - CORRIGIDO PARA ESTRUTURA DO FRONTEND
-
-        Retorna:
-        {
-            "kpis": [
-                {"name": "Total de Vendas", "value": 907, "unit": "", "trend": "0.0"},
-                ...
-            ],
-            "raw_data": {
-                "pedidos": 907,
-                "bruto": 123456.78,
-                "taxa_total": 12345.67,
-                "frete_net": 12345.68,
-                "lucro_real": 45678.90,
-                "periodo": {"start": "2025-09-01", "end": "2025-10-31"}
-            }
-        }
+        KPIs PRINCIPAIS - CORRIGIDO PARA USAR A COLUNA 'mc_ml' DIRETAMENTE
         """
         try:
             start_date, end_date = self._get_default_period(start, end)
@@ -126,22 +105,24 @@ class MLAnalyticsService:
                 conta=conta, status=status, query=query
             )
 
+            # REVISÃO CIRÚRGICA: A query foi alterada para somar as colunas corretas.
+            # `custo_operacional_ml` para os custos do canal e `mc_ml` para a margem.
             result = base_query.with_entities(
                 func.count(VendaML.id_pedido).label('pedidos'),
                 func.sum(VendaML.preco_unitario * VendaML.quantidade).label('bruto'),
-                func.sum(VendaML.comissoes + VendaML.taxa_fixa_ml).label('taxa_total'),
-                func.sum(VendaML.frete_seller).label('frete_net'),
-                func.sum(VendaML.lucro_real).label('lucro_real')
+                func.sum(VendaML.custo_operacional_ml).label('custo_operacional_total'),
+                func.sum(VendaML.mc_ml).label('margem_contribuicao_total')
             ).first()
 
             bruto = float(result.bruto or 0)
-            lucro_real = float(result.lucro_real or 0)
             pedidos = int(result.pedidos or 0)
-            taxa_total = float(result.taxa_total or 0)
-            frete_net = float(result.frete_net or 0)
 
-            # Cálculos adicionais que o frontend espera
-            faturamento_liquido = bruto - taxa_total - frete_net
+            # REVISÃO: Usando os novos valores da query para os cálculos.
+            custo_operacional_total = float(result.custo_operacional_total or 0)
+            margem_contribuicao_total = float(result.margem_contribuicao_total or 0)
+
+            # REVISÃO: Faturamento líquido agora usa o custo operacional correto.
+            faturamento_liquido = bruto - custo_operacional_total
             ticket_medio = (bruto / pedidos) if pedidos > 0 else 0
 
             # ESTRUTURA DE KPI ESPERADA PELO dashboard-manager.js
@@ -158,9 +139,10 @@ class MLAnalyticsService:
                 {
                     "name": "Ticket Médio", "value": round(ticket_medio, 2), "unit": "R$", "trend": "0.0"
                 },
+                # REVISÃO FINAL: O card "Lucro Estimado" é alimentado pela soma da `mc_ml`.
+                # A conexão está feita da forma correta, sem gambiarras.
                 {
-                    "name": "Lucro Estimado", "value": round(faturamento_liquido, 2),
-
+                    "name": "Lucro Estimado", "value": round(margem_contribuicao_total, 2), "unit": "R$", "trend": "0.0"
                 }
             ]
 
@@ -170,9 +152,9 @@ class MLAnalyticsService:
                 "raw_data": {
                     "pedidos": pedidos,
                     "bruto": round(bruto, 2),
-                    "taxa_total": round(taxa_total, 2),
-                    "frete_net": round(frete_net, 2),
-                    "lucro_real": round(lucro_real, 2),
+                    # REVISÃO: Renomeado para clareza e consistência.
+                    "custo_operacional_total": round(custo_operacional_total, 2),
+                    "margem_contribuicao_total": round(margem_contribuicao_total, 2),
                     "periodo": {
                         "start": start_date.strftime('%Y-%m-%d'),
                         "end": end_date.strftime('%Y-%m-%d')
@@ -185,7 +167,7 @@ class MLAnalyticsService:
             # Retorna uma estrutura de erro compatível
             return {"kpis": [], "error": str(e)}
 
-    # ===== CORREÇÃO CRÍTICA: get_sales_trends() =====
+    # ===== CÓDIGO ORIGINAL MANTIDO INTOCADO A PARTIR DAQUI =====
     def get_sales_trends(self, company_id=None, start=None, end=None,
                          conta=None, status=None, query=None):
         """

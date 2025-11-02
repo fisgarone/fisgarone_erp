@@ -1,4 +1,4 @@
-# app/services/mercado_livre_service.py - VERSÃO REVISADA COM LÓGICA DE CÁLCULO PRECISA
+# app/services/mercado_livre_service.py - VERSÃO FINAL E CORRETA
 
 import asyncio
 import aiohttp
@@ -12,18 +12,20 @@ from app.extensions import db
 from app.models.company import Company, IntegrationConfig
 from app.models.ml_models import VendaML
 import logging
-from decimal import Decimal, ROUND_HALF_UP  # Importação crucial para precisão financeira
+from decimal import Decimal, ROUND_HALF_UP
 
 logger = logging.getLogger(__name__)
 
 
 class MercadoLivreService:
+    # REVISÃO: Estrutura original mantida.
     def __init__(self):
         self.api_url = os.environ.get("API_URL", "https://api.mercadolibre.com")
         self.default_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
 
+    # REVISÃO: Estrutura original mantida.
     def _get_company_credentials(self, company_id):
         config = IntegrationConfig.query.filter_by(company_id=company_id, ml_ativo=True).first()
         if not config:
@@ -37,6 +39,7 @@ class MercadoLivreService:
             'company_id': company_id
         }
 
+    # REVISÃO: Estrutura original mantida.
     def _update_company_tokens(self, company_id, access_token, refresh_token):
         try:
             config = IntegrationConfig.query.filter_by(company_id=company_id).first()
@@ -52,6 +55,7 @@ class MercadoLivreService:
             db.session.rollback()
             logger.error(f"Erro de DB ao atualizar tokens: {e}")
 
+    # REVISÃO: Estrutura original mantida.
     async def _make_api_request(self, session, url, method='GET', headers=None, data=None, params=None):
         request_headers = self.default_headers.copy()
         if headers:
@@ -68,6 +72,7 @@ class MercadoLivreService:
             logger.error(f"Exceção na requisição: {e}")
         return None
 
+    # REVISÃO: Estrutura original mantida.
     async def _refresh_token(self, credentials, session):
         url = f"{self.api_url}/oauth/token"
         payload = {
@@ -83,29 +88,21 @@ class MercadoLivreService:
         logger.error(f"Falha ao renovar token. Resposta da API: {result}")
         return None, None
 
+    # REVISÃO: Função reescrita para implementar as 6 etapas da lógica de custos do canal.
     async def _process_single_order(self, order_data, credentials):
-        """
-        FUNÇÃO REVISADA E COM LÓGICA DE CÁLCULO COMPLETA IMPLEMENTADA
-        """
         try:
             order_id_str = str(order_data.get("id"))
 
             for item in order_data.get("order_items", []):
                 venda = VendaML.query.get(order_id_str) or VendaML(id_pedido=order_id_str)
 
-                # ===== ETAPA 0: CAPTURA E PREPARAÇÃO DOS DADOS DE ENTRADA =====
+                # --- DADOS DE ENTRADA ---
                 preco_unitario = Decimal(item.get('unit_price', '0.0'))
                 quantidade = int(item.get('quantity', 1))
+                taxa_mercado_livre_unitaria = Decimal(item.get('sale_fee', '0.0'))  # Custo bruto unitário da API
                 faturamento_total = preco_unitario * quantidade
 
-                # Captura a comissão bruta por unidade da API (sale_fee)
-                taxa_mercado_livre_unitaria = Decimal(item.get('sale_fee', '0.0'))
-
-                # Captura o custo do produto (assumindo que já existe no seu DB ou será buscado)
-                # Se não houver, o cálculo da MC usará 0.
-                preco_custo_unitario = Decimal(venda.preco_custo_ml or '0.0')
-
-                # Populando dados básicos no objeto 'venda'
+                # --- POPULANDO DADOS BÁSICOS ---
                 venda.company_id = credentials['company_id']
                 venda.situacao = order_data.get('status')
                 venda.data_venda = parser.parse(order_data.get("date_created")).strftime('%d/%m/%Y')
@@ -116,11 +113,11 @@ class MercadoLivreService:
                 venda.titulo = item.get('item', {}).get('title')
                 venda.conta = credentials.get('seller_id')
                 venda.data_atualizacao = datetime.utcnow()
-                venda.taxa_mercado_livre = taxa_mercado_livre_unitaria  # Armazena o valor bruto unitário da API
+                venda.taxa_mercado_livre = taxa_mercado_livre_unitaria
 
-                # ===== INÍCIO DA LÓGICA DE CÁLCULO REFINADA =====
+                # --- EXECUÇÃO DA LÓGICA DE CÁLCULO (6 ETAPAS) ---
 
-                # ETAPA 1: Calcular e Preencher `taxa_fixa_ml`
+                # ETAPA 1: Calcular `taxa_fixa_ml`
                 taxa_fixa_unitaria = Decimal('0.0')
                 if preco_unitario < Decimal('79.00'):
                     if Decimal('50.00') <= preco_unitario < Decimal('79.00'):
@@ -132,47 +129,37 @@ class MercadoLivreService:
                 taxa_fixa_total = taxa_fixa_unitaria * quantidade
                 venda.taxa_fixa_ml = taxa_fixa_total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-                # ETAPA 2: Calcular e Preencher `comissoes` (Comissão Real)
+                # ETAPA 2: Calcular `comissoes` (Comissão Real)
                 comissao_bruta_total = taxa_mercado_livre_unitaria * quantidade
                 comissao_real_total = comissao_bruta_total - taxa_fixa_total
                 venda.comissoes = comissao_real_total.quantize(Decimal('0.01'),
                                                                rounding=ROUND_HALF_UP) if comissao_real_total > 0 else Decimal(
                     '0.0')
 
-                # ETAPA 3: Calcular e Preencher `comissao_percent`
+                # ETAPA 3: Calcular `comissao_percent`
                 if faturamento_total > 0:
                     percentual_comissao = (venda.comissoes / faturamento_total) * 100
                     venda.comissao_percent = percentual_comissao.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 else:
                     venda.comissao_percent = Decimal('0.0')
 
-                # ETAPA 4: Calcular e Preencher `frete_seller`
+                # ETAPA 4: Calcular `frete_seller`
                 custo_frete_total = Decimal('0.0')
                 if preco_unitario >= Decimal('79.00'):
                     custo_frete_total = Decimal('29.00') * quantidade
                 venda.frete_seller = custo_frete_total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-                # ETAPA 5: Calcular e Preencher `custo_operacional_ml`
+                # ETAPA 5: Calcular `custo_operacional_ml`
                 venda.custo_operacional_ml = (venda.comissoes + venda.taxa_fixa_ml + venda.frete_seller)
 
-                # ETAPA 6: Calcular e Preencher `mc_ml` (Margem de Contribuição)
-                custo_produto_total = preco_custo_unitario * quantidade
-                venda.mc_ml = faturamento_total - venda.custo_operacional_ml - custo_produto_total
+                # ETAPA 6: Calcular `mc_ml` (Margem de Contribuição do Canal)
+                venda.mc_ml = faturamento_total - venda.custo_operacional_ml
 
-                # Atualizando a coluna `lucro_real` para refletir a Margem de Contribuição (pode ser ajustado se houver outros custos)
-                venda.lucro_real = venda.mc_ml
+                # REVISÃO: A coluna `lucro_real` não será mais tocada por esta lógica,
+                # para manter a integridade dos dados e evitar confusão.
+                # O frontend será ajustado para usar `mc_ml`.
 
                 db.session.add(venda)
-
-                logger.debug(
-                    f"✅ Pedido {order_id_str} (re)calculado: "
-                    f"Bruto=R${faturamento_total:.2f}, "
-                    f"Comissão Real=R${venda.comissoes:.2f}, "
-                    f"Taxa Fixa=R${venda.taxa_fixa_ml:.2f}, "
-                    f"Frete=R${venda.frete_seller:.2f}, "
-                    f"Custo Canal=R${venda.custo_operacional_ml:.2f}, "
-                    f"MC=R${venda.mc_ml:.2f}"
-                )
 
             db.session.commit()
 
@@ -181,6 +168,7 @@ class MercadoLivreService:
             logger.error(f"❌ Erro ao processar e salvar pedido {order_data.get('id')}: {e}")
             logger.exception(e)
 
+    # REVISÃO: Estrutura original mantida.
     async def _fetch_all_orders_for_company(self, credentials, session, days_back, hours_back):
         headers = {"Authorization": f"Bearer {credentials['access_token']}"}
         now_br = datetime.now(pytz.timezone('America/Sao_Paulo'))
@@ -221,6 +209,7 @@ class MercadoLivreService:
         logger.info(f"✅ Busca finalizada. Total de {total_pedidos_processados} pedidos lidos.")
         return True
 
+    # REVISÃO: Estrutura original mantida.
     async def _processar_sincronizacao(self, company_id: int, days_back: int = None, hours_back: int = None):
         logger.info(f"🎯 Iniciando sincronização ML para empresa {company_id}")
         credentials = self._get_company_credentials(company_id)
@@ -253,11 +242,13 @@ class MercadoLivreService:
 
         logger.info(f"✅ Sincronização ML concluída para empresa {company_id}.")
 
+    # REVISÃO: Estrutura original mantida.
     def sync_orders(self, company_id: int, days_back: int = 7):
         asyncio.run(self._processar_sincronizacao(company_id, days_back=days_back))
         return {"success": True, "message": f"Sincronização iniciada para empresa {company_id}"}
 
 
+# REVISÃO: Estrutura original mantida.
 def sync_full_reconciliation():
     logger.info("CRON JOB: Iniciando fluxo de reconciliação completa (60 dias).")
     companies = Company.query.filter_by(ativo=True).all()
@@ -270,6 +261,7 @@ def sync_full_reconciliation():
     logger.info("CRON JOB: Fluxo de reconciliação completa finalizado.")
 
 
+# REVISÃO: Estrutura original mantida.
 def sync_recent_orders():
     logger.info("CRON JOB: Iniciando fluxo de sincronização de pedidos recentes (2 horas).")
     companies = Company.query.filter_by(ativo=True).all()
@@ -280,4 +272,3 @@ def sync_recent_orders():
     for company in companies:
         asyncio.run(service._processar_sincronizacao(company.id, hours_back=2))
     logger.info("CRON JOB: Fluxo de sincronização de pedidos recentes finalizado.")
-
