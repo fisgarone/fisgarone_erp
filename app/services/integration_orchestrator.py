@@ -1,9 +1,10 @@
+# app/services/integration_orchestrator.py
 from __future__ import annotations
 import os
 from contextlib import contextmanager
 from typing import Dict, List, Optional, Iterable, Tuple, Union
 
-# Use suas rotinas já existentes
+# Use suas rotinas existentes (ajuste os imports se seus nomes forem diferentes)
 from app.services.mercado_livre_service import (
     sync_full_reconciliation as ml_sync_full,
     sync_recent_orders as ml_sync_recent,
@@ -27,6 +28,7 @@ def temporary_env(vars_to_set: Dict[str, str]):
                 os.environ[k] = old
 
 def _labels_from_env(prefix: str) -> List[str]:
+    # Ex.: CLIENT_ID_TOYS → label "TOYS"
     labels = set()
     for k in os.environ.keys():
         if k.startswith(prefix):
@@ -37,7 +39,7 @@ def _labels_from_env(prefix: str) -> List[str]:
 
 def discover_ml_accounts() -> List[Dict[str, str]]:
     accs: List[Dict[str, str]] = []
-    # Modo indexado: ML_1_CLIENT_ID, ML_2_CLIENT_ID, ...
+    # 1) Modo indexado: ML_1_CLIENT_ID, ML_2_CLIENT_ID, ...
     for i in range(1, 21):
         cid = os.getenv(f"ML_{i}_CLIENT_ID")
         if cid:
@@ -52,7 +54,7 @@ def discover_ml_accounts() -> List[Dict[str, str]]:
                 "SELLER_ID": os.getenv(f"ML_{i}_SELLER_ID", ""),
                 "CNPJ": os.getenv(f"ML_{i}_CNPJ", ""),
             })
-    # Modo rotulado: CLIENT_ID_TOYS, CLIENT_SECRET_TOYS, ...
+    # 2) Modo rotulado: CLIENT_ID_TOYS, CLIENT_SECRET_TOYS, ...
     for label in _labels_from_env("CLIENT_ID_"):
         cid = os.getenv(f"CLIENT_ID_{label}")
         csec = os.getenv(f"CLIENT_SECRET_{label}")
@@ -73,7 +75,7 @@ def discover_ml_accounts() -> List[Dict[str, str]]:
 
 def discover_shopee_accounts() -> List[Dict[str, str]]:
     accs: List[Dict[str, str]] = []
-    # Modo indexado: SHOPEE_1_PARTNER_ID, ...
+    # 1) Modo indexado: SHOPEE_1_PARTNER_ID, ...
     for i in range(1, 21):
         pid = os.getenv(f"SHOPEE_{i}_PARTNER_ID")
         if pid:
@@ -87,7 +89,7 @@ def discover_shopee_accounts() -> List[Dict[str, str]]:
                 "ACCESS_TOKEN": os.getenv(f"SHOPEE_{i}_ACCESS_TOKEN", ""),
                 "REFRESH_TOKEN": os.getenv(f"SHOPEE_{i}_REFRESH_TOKEN", ""),
             })
-    # Modo rotulado: SHOPEE_PARTNER_ID_COMERCIAL, ...
+    # 2) Modo rotulado: SHOPEE_PARTNER_ID_COMERCIAL, ...
     for k in list(os.environ.keys()):
         if k.startswith("SHOPEE_PARTNER_ID_"):
             label = k.split("SHOPEE_PARTNER_ID_")[-1]
