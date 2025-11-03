@@ -1,21 +1,13 @@
 #!/usr/bin/env python3
-"""
-Script para Cron Job: Sincronização Completa (60 dias)
-Executa a cada 3 horas para manter dados atualizados
-"""
+import argparse, sys
+from app.services.integration_orchestrator import run_full
 
-import sys
-import os
-
-# Adiciona o diretório do projeto ao path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from app import create_app
-from app.services.mercado_livre_service import sync_full_reconciliation
-
-if __name__ == '__main__':
-    app = create_app()
-    with app.app_context():
-        print("🔄 Iniciando sincronização completa (60 dias)...")
-        sync_full_reconciliation()
-        print("✅ Sincronização completa finalizada!")
+if __name__ == "__main__":
+    p = argparse.ArgumentParser(description="Sincronização COMPLETA (todas as contas)")
+    p.add_argument("--provider", default="ALL", help="ML | SHOPEE | ALL")
+    p.add_argument("--accounts", default=None, help="Ex.: 1,3 ou TOYS,COMERCIAL")
+    args = p.parse_args()
+    sel = [s.strip() for s in args.accounts.split(",")] if args.accounts else None
+    ok, fail = run_full(provider=args.provider, accounts=sel)
+    print(f"\nResumo: OK={ok}  FAIL={fail}")
+    sys.exit(0 if ok > 0 else 1)
