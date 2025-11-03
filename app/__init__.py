@@ -29,6 +29,10 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
 
+    from app.routes.filter_routes import bp as filters_bp
+app.register_blueprint(filters_bp)
+
+
     # === REGISTRAR BLUEPRINTS ===
     # 1. Rotas principais (frontend e dashboard)
     app.register_blueprint(main_bp)
