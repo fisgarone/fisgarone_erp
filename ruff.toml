@@ -1,0 +1,11 @@
+line-length = 100
+target-version = "py312"
+
+[lint]
+select = ["E","F","W","B","I","UP","PL","C90"]
+ignore = ["E203"]
+exclude = ["migrations/"]
+
+[format]
+quote-style = "double"
+indent-style = "space"

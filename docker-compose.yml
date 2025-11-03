@@ -1,0 +1,49 @@
+version: "3.9"
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-erp}
+      MYSQL_USER: ${DB_USER:-erp}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-erp}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    ports:
+      - "3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p${DB_ROOT_PASSWORD:-root} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    command: python run.py
+    env_file:
+      - .env
+    environment:
+      FLASK_ENV: ${FLASK_ENV:-development}
+      SQLALCHEMY_DATABASE_URI: ${SQLALCHEMY_DATABASE_URI:-mysql+pymysql://${DB_USER:-erp}:${DB_PASSWORD:-erp}@db:3306/${DB_NAME:-erp}}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+  migrate:
+    build: .
+    command: flask db upgrade
+    env_file: [.env]
+    environment:
+      SQLALCHEMY_DATABASE_URI: ${SQLALCHEMY_DATABASE_URI:-mysql+pymysql://${DB_USER:-erp}:${DB_PASSWORD:-erp}@db:3306/${DB_NAME:-erp}}
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: ["migrate"]
+
+volumes:
+  dbdata:
