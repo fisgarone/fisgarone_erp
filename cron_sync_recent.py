@@ -1,21 +1,13 @@
 #!/usr/bin/env python3
-"""
-Script para Cron Job: Sincronização Recente (2 horas)
-Executa a cada 3 minutos para capturar vendas em tempo real
-"""
+import argparse, sys
+from app.services.integration_orchestrator import run_recent
 
-import sys
-import os
-
-# Adiciona o diretório do projeto ao path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from app import create_app
-from app.services.mercado_livre_service import sync_recent_orders
-
-if __name__ == '__main__':
-    app = create_app()
-    with app.app_context():
-        print("⚡ Iniciando sincronização recente (2 horas)...")
-        sync_recent_orders()
-        print("✅ Sincronização recente finalizada!")
+if __name__ == "__main__":
+    p = argparse.ArgumentParser(description="Sincronização RÁPIDA (todas as contas)")
+    p.add_argument("--provider", default="ALL", help="ML | SHOPEE | ALL")
+    p.add_argument("--accounts", default=None, help="Ex.: 2,4 ou TOYS,PESCA")
+    args = p.parse_args()
+    sel = [s.strip() for s in args.accounts.split(",")] if args.accounts else None
+    ok, fail = run_recent(provider=args.provider, accounts=sel)
+    print(f"\nResumo: OK={ok}  FAIL={fail}")
+    sys.exit(0 if ok > 0 else 1)
