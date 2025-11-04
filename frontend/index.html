@@ -1,10 +1,16 @@
 {% extends "base.html" %}
 
 {% block title %}Dashboard Executivo • FISGARONE ERP{% endblock %}
-
 {% block page_title %}Dashboard Executivo{% endblock %}
 
 {% block content %}
+    <!-- Nó de configuração não-visual para os componentes JS -->
+    <div id="dashboard-config"
+         data-filters-url="/api/filters/accounts"
+         data-summary-url="/api/dashboard/summary"
+         data-default-period="month_to_date"
+         hidden></div>
+
     <!-- LINHA 1: MÉTRICAS EM TEMPO REAL -->
     <section class="ai-section">
         <div class="section-header">
@@ -13,26 +19,29 @@
                 <p class="section-subtitle">Dados atualizados automaticamente</p>
             </div>
             <div class="header-actions">
-                 <button class="ai-btn ai-btn-secondary" onclick="dashboard.exportData()">
+                <button class="ai-btn ai-btn-secondary" id="btn-exportar">
                     📥 Exportar
                 </button>
-                <button class="ai-btn ai-btn-primary btn-with-icon" onclick="dashboard.refreshData()">
+                <button class="ai-btn ai-btn-primary btn-with-icon" id="btn-atualizar">
                     <span>🔄</span>
                     Atualizar Dados
                 </button>
             </div>
         </div>
+        <!-- container consumido pelo dashboard-manager -->
         <div class="metrics-top-grid" id="kpi-container"></div>
     </section>
 
-    <!-- ... (O restante das suas seções de conteúdo permanece exatamente igual) ... -->
+    <!-- FILTROS -->
     <section class="ai-section">
         <div class="section-header">
             <h2 class="section-title">🎛️ Filtros Avançados</h2>
         </div>
+        <!-- o componente filters-system deve montar o HTML aqui -->
         <div id="filters-container"></div>
     </section>
 
+    <!-- INSIGHTS / ANALYTICS -->
     <section class="ai-section">
         <div class="insights-analytics-grid">
             <div>
@@ -46,11 +55,13 @@
         </div>
     </section>
 
+    <!-- CHARTS -->
     <section class="ai-section">
         <h2 class="section-title">📊 Visualizações Gráficas</h2>
         <div class="visualizations-full" id="charts-container"></div>
     </section>
 
+    <!-- ABC / DISTRIBUIÇÃO -->
     <section class="ai-section">
         <div class="products-distribution-grid">
             <div>
@@ -64,25 +75,67 @@
         </div>
     </section>
 
+    <!-- MÉTRICAS ESTRATÉGICAS -->
     <section class="ai-section">
         <h2 class="section-title">📈 Métricas Estratégicas</h2>
         <div class="metrics-top-grid" id="strategic-container"></div>
     </section>
 
-    <button class="floating-action" onclick="dashboard.scrollToTop()" title="Voltar ao topo">↑</button>
+    <!-- UX -->
+    <button class="floating-action" onclick="dashboard?.scrollToTop?.()" title="Voltar ao topo">↑</button>
 {% endblock %}
 
 {% block scripts %}
+    {# Ordem preservada; todos com defer #}
     <script src="{{ url_for('static', filename='js/core/ai-engine.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/services/api-integration.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/components/modal-system.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/components/filters-system.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/components/charts-system.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/components/dashboard-manager.js') }}" defer></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            window.dashboard = new DashboardManager();
-            await dashboard.initialize();
-        });
+
+    <!-- Bridge de configuração (não altera seus .js; apenas disponibiliza contexto) -->
+    <script defer>
+      window.addEventListener('DOMContentLoaded', async () => {
+        // publica configuração lida do nó data-* para quem precisar
+        const cfgEl = document.getElementById('dashboard-config');
+        window.__DASHBOARD_CONFIG__ = {
+          filtersUrl:  cfgEl?.dataset?.filtersUrl  || '/api/filters/accounts',
+          summaryUrl:  cfgEl?.dataset?.summaryUrl  || '/api/dashboard/summary',
+          defaultPeriod: cfgEl?.dataset?.defaultPeriod || 'month_to_date'
+        };
+
+        // instancia o manager se ainda não existir
+        if (!window.dashboard && typeof DashboardManager === 'function') {
+          window.dashboard = new DashboardManager({
+            // os componentes podem optar por ler daqui ou de window.__DASHBOARD_CONFIG__
+            filtersUrl: window.__DASHBOARD_CONFIG__.filtersUrl,
+            summaryUrl: window.__DASHBOARD_CONFIG__.summaryUrl,
+            defaultPeriod: window.__DASHBOARD_CONFIG__.defaultPeriod,
+            anchors: {
+              kpis: '#kpi-container',
+              filters: '#filters-container',
+              charts: '#charts-container',
+              insights: '#insights-container',
+              analytics: '#analytics-container',
+              abc: '#abc-container',
+              distribution: '#distribution-container',
+              strategic: '#strategic-container'
+            },
+            // callbacks opcionais para botões do header
+            buttons: {
+              refresh: '#btn-atualizar',
+              export:  '#btn-exportar'
+            }
+          });
+        }
+
+        // inicialização padrão e bind de botões (idempotente)
+        try { await window.dashboard.initialize(); } catch (e) { console.error('dashboard.initialize()', e); }
+        try {
+          document.querySelector('#btn-atualizar')?.addEventListener('click', () => window.dashboard.refreshData?.());
+          document.querySelector('#btn-exportar')?.addEventListener('click', () => window.dashboard.exportData?.());
+        } catch(e) { console.error('bind header buttons', e); }
+      });
     </script>
 {% endblock %}
