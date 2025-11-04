@@ -1,49 +1,40 @@
-# app/__init__.py - VERSÃO CORRIGIDA E VALIDADA
+# app/__init__.py
+import os
 from flask import Flask
 from .extensions import db, migrate
-import os
 
-# Importar Blueprints
+# Blueprints
 from app.routes.main_routes import main_bp
 from app.routes.ml_routes import init_ml_routes
 from app.routes.company_routes import company_bp
 from app.routes.integration_routes import integration_bp
+from app.routes.filter_routes import bp as filters_bp
 
 def create_app():
-    # Usar o nome do diretório do projeto como base para os caminhos
-    # Isso garante que o Flask encontre a pasta `frontend` corretamente
+    # Base do projeto para static/templates
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
-    app = Flask(__name__,
-                # Caminho para os arquivos estáticos (CSS, JS, imagens)
-                static_folder=os.path.join(project_root, 'frontend'),
-                static_url_path='',
-                # Caminho para os templates HTML
-                template_folder=os.path.join(project_root, 'frontend'))
+    app = Flask(
+        __name__,
+        static_folder=os.path.join(project_root, 'frontend'),
+        static_url_path='',
+        template_folder=os.path.join(project_root, 'frontend')
+    )
 
-    # Carregar configurações do ambiente (DATABASE_URL)
+    # Configurações
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Inicializar extensões
+    # Extensões
     db.init_app(app)
     migrate.init_app(app, db)
 
-    from app.routes.filter_routes import bp as filters_bp
-app.register_blueprint(filters_bp)
-
-
-    # === REGISTRAR BLUEPRINTS ===
-    # 1. Rotas principais (frontend e dashboard)
-    app.register_blueprint(main_bp)
-
-    # 2. Rotas da API do Mercado Livre
-    init_ml_routes(app)
-
-    # 3. Outras rotas da API
+    # Registrar blueprints (uma vez cada)
+    app.register_blueprint(filters_bp)                              # /api/filters/accounts
+    app.register_blueprint(main_bp)                                 # frontend/dashboard
+    init_ml_routes(app)                                             # rotas ML
     app.register_blueprint(company_bp, url_prefix='/api/companies')
     app.register_blueprint(integration_bp, url_prefix='/api/integration')
 
     print("✅ Aplicação criada e rotas registradas com sucesso!")
-
     return app
