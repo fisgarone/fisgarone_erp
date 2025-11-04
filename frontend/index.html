@@ -1,10 +1,16 @@
 {% extends "base.html" %}
 
 {% block title %}Dashboard Executivo • FISGARONE ERP{% endblock %}
-
 {% block page_title %}Dashboard Executivo{% endblock %}
 
 {% block content %}
+    {# Nó de configuração para os componentes JS (não-visual) #}
+    <div id="dashboard-config"
+         data-filters-url="/api/filters/accounts"
+         data-summary-url="/api/dashboard/summary"
+         data-default-period="month_to_date"
+         hidden></div>
+
     <!-- LINHA 1: MÉTRICAS EM TEMPO REAL -->
     <section class="ai-section">
         <div class="section-header">
@@ -13,10 +19,10 @@
                 <p class="section-subtitle">Dados atualizados automaticamente</p>
             </div>
             <div class="header-actions">
-                 <button class="ai-btn ai-btn-secondary" onclick="dashboard.exportData()">
+                <button class="ai-btn ai-btn-secondary" id="btn-exportar">
                     📥 Exportar
                 </button>
-                <button class="ai-btn ai-btn-primary btn-with-icon" onclick="dashboard.refreshData()">
+                <button class="ai-btn ai-btn-primary btn-with-icon" id="btn-atualizar">
                     <span>🔄</span>
                     Atualizar Dados
                 </button>
@@ -25,7 +31,7 @@
         <div class="metrics-top-grid" id="kpi-container"></div>
     </section>
 
-    <!-- ... (O restante das suas seções de conteúdo permanece exatamente igual) ... -->
+    <!-- FILTROS AVANÇADOS -->
     <section class="ai-section">
         <div class="section-header">
             <h2 class="section-title">🎛️ Filtros Avançados</h2>
@@ -33,6 +39,7 @@
         <div id="filters-container"></div>
     </section>
 
+    <!-- INSIGHTS / ANALYTICS -->
     <section class="ai-section">
         <div class="insights-analytics-grid">
             <div>
@@ -46,11 +53,13 @@
         </div>
     </section>
 
+    <!-- CHARTS -->
     <section class="ai-section">
         <h2 class="section-title">📊 Visualizações Gráficas</h2>
         <div class="visualizations-full" id="charts-container"></div>
     </section>
 
+    <!-- ABC / DISTRIBUIÇÃO -->
     <section class="ai-section">
         <div class="products-distribution-grid">
             <div>
@@ -64,25 +73,186 @@
         </div>
     </section>
 
+    <!-- MÉTRICAS ESTRATÉGICAS -->
     <section class="ai-section">
         <h2 class="section-title">📈 Métricas Estratégicas</h2>
         <div class="metrics-top-grid" id="strategic-container"></div>
     </section>
 
-    <button class="floating-action" onclick="dashboard.scrollToTop()" title="Voltar ao topo">↑</button>
+    <button class="floating-action" onclick="window.dashboard?.scrollToTop?.()" title="Voltar ao topo">↑</button>
 {% endblock %}
 
 {% block scripts %}
+    {# Ordem original, sem alterar seus assets globais #}
     <script src="{{ url_for('static', filename='js/core/ai-engine.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/services/api-integration.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/components/modal-system.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/components/filters-system.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/components/charts-system.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/components/dashboard-manager.js') }}" defer></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            window.dashboard = new DashboardManager();
-            await dashboard.initialize();
+
+    <!-- Bridge de configuração + fixes de filtro/contas e período padrão -->
+    <script defer>
+      (function () {
+        const cfgEl = document.getElementById('dashboard-config') || {};
+        const CFG = {
+          filtersUrl:   cfgEl.dataset?.filtersUrl   || '/api/filters/accounts',
+          summaryUrl:   cfgEl.dataset?.summaryUrl   || '/api/dashboard/summary',
+          defaultPeriod:cfgEl.dataset?.defaultPeriod|| 'month_to_date'
+        };
+        // Expor de forma explícita e auditável
+        window.__DASHBOARD_CONFIG__ = CFG;
+
+        // Utilitários de formato
+        const brl = n => {
+          try { return Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+          catch { return 'R$ 0,00'; }
+        };
+        const intf = n => {
+          try { return Number(n||0).toLocaleString('pt-BR'); }
+          catch { return '0'; }
+        };
+
+        // Aplica filtros ao backend via querystring (period/account/...)
+        async function refreshSummaryWithFilters() {
+          try {
+            if (!window.dashboard?.getFilters) return; // respeita sua implementação
+            const f = window.dashboard.getFilters(CFG) || {};
+            // Garantir padrão "mês corrente" na ausência de escolha
+            f.period = f.period || CFG.defaultPeriod;
+
+            const qs = new URLSearchParams({
+              period:  f.period || '',
+              account: f.account || '',
+              status:  f.status || '',
+              category:f.category || ''
+            }).toString();
+
+            const r = await fetch(`${CFG.summaryUrl}?${qs}`, { cache: 'no-store' });
+            if (!r.ok) throw new Error('summary endpoint not ok');
+            const d = await r.json();
+
+            // Se seu dashboard-manager renderiza os cards sozinho, delegue:
+            if (typeof window.dashboard.renderSummary === 'function') {
+              return window.dashboard.renderSummary(d, { brl, intf });
+            }
+
+            // Fallback não-intrusivo: tenta IDs padrão usados no projeto
+            document.getElementById('card_total_vendas')?.textContent = intf(d.total_vendas);
+            document.getElementById('card_fat_bruto')?.textContent    = brl(d.faturamento_bruto);
+            document.getElementById('card_fat_liquido')?.textContent  = brl(d.faturamento_liquido);
+            document.getElementById('card_ticket_medio')?.textContent = brl(d.ticket_medio);
+            document.getElementById('card_lucro')?.textContent        = brl(d.lucro);
+          } catch (e) {
+            console.error('refreshSummaryWithFilters', e);
+          }
+        }
+
+        // Popula o select de Conta ML (não-intrusivo; só incrementa)
+        async function ensureMlAccountsSelectPopulated() {
+          try {
+            const r = await fetch(CFG.filtersUrl, { cache: 'no-store' });
+            if (!r.ok) throw new Error('filters endpoint not ok');
+            const data = await r.json();
+            const accounts = (data && data.mercado_livre) || [];
+            if (!accounts.length) return;
+
+            // Procura um select destinado à conta ML
+            // Tentamos por id conhecido, depois por data-attr, depois por label
+            let sel =
+              document.getElementById('mlAccountSelect') ||
+              document.querySelector('select[data-role="ml-account"]') ||
+              Array.from(document.querySelectorAll('#filters-container select')).find(s => {
+                const id = (s.id||'').toLowerCase();
+                const name = (s.name||'').toLowerCase();
+                return id.includes('ml') && id.includes('account') || name.includes('ml');
+              });
+
+            if (!sel) return; // se o componente não expõe select, não forçamos nada
+
+            // Não duplicar opções se já foi populado corretamente
+            const existing = new Set(Array.from(sel.options).map(o => (o.value||'').toUpperCase()));
+            let changed = false;
+
+            // Garante opção "todas"
+            if (!existing.has('')) {
+              const optAll = document.createElement('option');
+              optAll.value = '';
+              optAll.textContent = 'Todas as Contas';
+              sel.insertBefore(optAll, sel.firstChild);
+              changed = true;
+            }
+
+            // Adiciona as contas que faltarem
+            for (const a of accounts) {
+              const val = (a.label || a.index || '').toString().toUpperCase();
+              if (!val) continue;
+              if (!existing.has(val)) {
+                const opt = document.createElement('option');
+                opt.value = a.label || a.index || '';
+                opt.textContent = a.label || `ML-${a.index}`;
+                sel.appendChild(opt);
+                changed = true;
+              }
+            }
+
+            // Se alterou opções e o dashboard tiver hook para reagir
+            if (changed && typeof window.dashboard?.onAccountsOptionsChanged === 'function') {
+              window.dashboard.onAccountsOptionsChanged(sel);
+            }
+          } catch (e) {
+            console.error('ensureMlAccountsSelectPopulated', e);
+          }
+        }
+
+        // Bind dos botões do header
+        function bindHeaderButtons() {
+          document.getElementById('btn-atualizar')?.addEventListener('click', () => {
+            // Respeita o refresh interno do dashboard; se existir, delega
+            if (typeof window.dashboard?.refreshData === 'function') {
+              return window.dashboard.refreshData();
+            }
+            // senão, garante aplicação dos filtros no resumo
+            refreshSummaryWithFilters();
+          });
+          document.getElementById('btn-exportar')?.addEventListener('click', () => {
+            if (typeof window.dashboard?.exportData === 'function') {
+              return window.dashboard.exportData();
+            }
+          });
+        }
+
+        // Bootstrap idempotente
+        window.addEventListener('DOMContentLoaded', async () => {
+          try {
+            if (!window.dashboard && typeof window.DashboardManager === 'function') {
+              window.dashboard = new window.DashboardManager({
+                filtersUrl: CFG.filtersUrl,
+                summaryUrl: CFG.summaryUrl,
+                defaultPeriod: CFG.defaultPeriod,
+                anchors: {
+                  kpis: '#kpi-container',
+                  filters: '#filters-container',
+                  charts: '#charts-container',
+                  insights: '#insights-container',
+                  analytics: '#analytics-container',
+                  abc: '#abc-container',
+                  distribution: '#distribution-container',
+                  strategic: '#strategic-container'
+                }
+              });
+            }
+            if (typeof window.dashboard?.initialize === 'function') {
+              await window.dashboard.initialize();
+            }
+
+            bindHeaderButtons();
+            await ensureMlAccountsSelectPopulated();   // garante TOYS/COMERCIAL/PESCA/CAMPING no select
+            await refreshSummaryWithFilters();         // aplica "mês corrente" ao carregar
+          } catch (e) {
+            console.error('dashboard bootstrap', e);
+          }
         });
+      })();
     </script>
 {% endblock %}
