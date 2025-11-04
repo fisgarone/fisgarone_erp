@@ -2,6 +2,7 @@
 import os
 from flask import Flask
 from .extensions import db, migrate
+from dotenv import load_dotenv
 
 # Blueprints
 from app.routes.main_routes import main_bp
