@@ -225,3 +225,30 @@ class ShopeeService:
         except Exception as e:
             logger.error(f"Erro atualizar estoque item {item_id}: {e}")
             return False
+
+# ====== Compatibilidade para o orquestrador (NÃO REMOVER) ======
+# Alguns lugares importam estes nomes antigos. Estes "atalhos" redirecionam
+# para as funções que você já tiver implementado (sync_full, run_full, etc).
+
+def _call_existing(candidates, *args, **kwargs):
+    import sys
+    m = sys.modules[__name__]
+    for name in candidates:
+        if hasattr(m, name):
+            return getattr(m, name)(*args, **kwargs)
+    raise NotImplementedError(f"Nenhuma função encontrada entre: {candidates}")
+
+def sync_full_reconciliation(*args, **kwargs):
+    # tente na ordem; ajuste/adicione aqui se seu arquivo usar outro nome
+    return _call_existing(
+        ["sync_full_reconciliation", "sync_full", "run_full", "full_sync"],
+        *args, **kwargs
+    )
+
+def sync_recent_orders(*args, **kwargs):
+    # tente na ordem; ajuste/adicione aqui se seu arquivo usar outro nome
+    return _call_existing(
+        ["sync_recent_orders", "sync_recent", "run_recent", "recent_sync"],
+        *args, **kwargs
+    )
+# ====== Fim da compatibilidade ======
