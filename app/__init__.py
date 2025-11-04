@@ -14,6 +14,7 @@ from app.routes.filter_routes import bp as filters_bp
 def create_app():
     # Base do projeto para static/templates
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    load_dotenv(os.path.join(project_root, '.env'))
 
     app = Flask(
         __name__,
